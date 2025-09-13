@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Use the remote API server
-const API_BASE_URL = `http://apiforspelling.somee.com/api`; // Backend API URL
+const API_BASE_URL = `https://apiforspelling.somee.com/api`; // Backend API URL
 
 // Create axios instance
 const api = axios.create({
