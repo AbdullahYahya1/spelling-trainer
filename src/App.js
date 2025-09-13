@@ -1,15 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-
-const LOCAL_STORAGE_KEY = 'spellingWords';
-
-const getWordsFromLocalStorage = () => {
-  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-  return stored ? stored.split(',').map(w => w.trim()).filter(Boolean) : [];
-};
-
-const setWordsToLocalStorage = (words) => {
-  localStorage.setItem(LOCAL_STORAGE_KEY, words.join(','));
-};
+import { authService } from './services/authService';
+import { storageService } from './services/storageService';
+import Login from './components/Login';
+import Register from './components/Register';
 
 const shuffleArray = (arr) => {
   const shuffled = [...arr];
@@ -23,15 +16,128 @@ const shuffleArray = (arr) => {
 export default function App() {
   const [page, setPage] = useState('typing');
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authPage, setAuthPage] = useState('login'); // 'login' or 'register'
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
     document.body.style.background = theme === 'dark' ? '#181a1b' : '#f7f7fa';
   }, [theme]);
 
+  useEffect(() => {
+    // Check if user is authenticated on app load
+    const checkAuth = async () => {
+      if (authService.isAuthenticated()) {
+        const result = await authService.validateToken();
+        if (result.success) {
+          setIsAuthenticated(true);
+          setUser(authService.getCurrentUser());
+          storageService.setOnlineMode(true);
+        } else {
+          authService.logout();
+          storageService.setOnlineMode(false);
+        }
+      } else {
+        storageService.setOnlineMode(false);
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
+  const handleLogin = async () => {
+    setIsAuthenticated(true);
+    setUser(authService.getCurrentUser());
+    storageService.setOnlineMode(true);
+    
+    // Sync local words to online storage
+    const syncResult = await storageService.syncLocalToOnline();
+    if (syncResult.success && syncResult.synced > 0) {
+      console.log(`Synced ${syncResult.synced} words to online storage`);
+    }
+    
+    // Redirect to main app
+    setAuthPage('');
+  };
+
+  const handleRegister = async () => {
+    setIsAuthenticated(true);
+    setUser(authService.getCurrentUser());
+    storageService.setOnlineMode(true);
+    
+    // Sync local words to online storage
+    const syncResult = await storageService.syncLocalToOnline();
+    if (syncResult.success && syncResult.synced > 0) {
+      console.log(`Synced ${syncResult.synced} words to online storage`);
+    }
+    
+    // Redirect to main app
+    setAuthPage('');
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setIsAuthenticated(false);
+    setUser(null);
+    storageService.setOnlineMode(false);
+  };
+
   const themedStyles = getThemedStyles(theme);
+
+  if (isLoading) {
+    return (
+      <div style={themedStyles.appWrapper}>
+        <div style={{ ...themedStyles.page, textAlign: 'center' }}>
+          <h2>Loading...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  // Show authentication pages only if user is trying to authenticate
+  if (authPage === 'login' || authPage === 'register') {
+    return (
+      <div style={themedStyles.appWrapper}>
+        <header style={themedStyles.header}>
+          <h1 style={themedStyles.title}>📝 Spelling Practice</h1>
+          <div style={themedStyles.nav}>
+            <button
+              onClick={() => setAuthPage('')}
+              style={themedStyles.themeToggleBtn}
+              aria-label="Back to app"
+            >
+              ← Back to App
+            </button>
+            <button
+              onClick={toggleTheme}
+              style={themedStyles.themeToggleBtn}
+              aria-label="Toggle dark/light mode"
+            >
+              {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+            </button>
+          </div>
+        </header>
+        {authPage === 'login' ? (
+          <Login 
+            onLogin={handleLogin}
+            onSwitchToRegister={() => setAuthPage('register')}
+            themedStyles={themedStyles}
+          />
+        ) : (
+          <Register 
+            onRegister={handleRegister}
+            onSwitchToLogin={() => setAuthPage('login')}
+            themedStyles={themedStyles}
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={themedStyles.appWrapper}>
@@ -60,6 +166,37 @@ export default function App() {
           >
             Manage Words
           </a>
+          
+          {isAuthenticated ? (
+            <div style={themedStyles.userInfo}>
+              <span style={themedStyles.userName}>👤 {user?.username}</span>
+              <button
+                onClick={handleLogout}
+                style={themedStyles.logoutBtn}
+                aria-label="Logout"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div style={themedStyles.authButtons}>
+              <button
+                onClick={() => setAuthPage('login')}
+                style={themedStyles.authHeaderBtn}
+                aria-label="Login"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setAuthPage('register')}
+                style={themedStyles.authHeaderBtn}
+                aria-label="Register"
+              >
+                Register
+              </button>
+            </div>
+          )}
+          
           <button
             onClick={toggleTheme}
             style={themedStyles.themeToggleBtn}
@@ -78,11 +215,19 @@ function TypingPage({ themedStyles }) {
   const [wordList, setWordList] = useState([]);
   const [typedWords, setTypedWords] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const inputRef = useRef(null);
 
-  const loadWords = () => {
-    const words = getWordsFromLocalStorage();
-    setWordList(shuffleArray(words));
+  const loadWords = async () => {
+    setIsLoading(true);
+    try {
+      const words = await storageService.getWords();
+      setWordList(shuffleArray(words));
+    } catch (error) {
+      console.error('Failed to load words:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -93,12 +238,20 @@ function TypingPage({ themedStyles }) {
     inputRef.current?.focus();
   }, [typedWords, wordList]);
 
-  const handleInputChange = (e) => {
+  const handleInputChange = async (e) => {
     const val = e.target.value;
     if (val.endsWith(' ')) {
       const word = val.trim();
+      const currentWordIndex = typedWords.length;
+      const isCorrect = word === wordList[currentWordIndex];
+      
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
+      
+      // Record practice result
+      if (wordList[currentWordIndex]) {
+        await storageService.recordPractice(wordList[currentWordIndex], isCorrect);
+      }
     } else {
       setCurrentInput(val);
     }
@@ -118,10 +271,18 @@ function TypingPage({ themedStyles }) {
     return 'incorrect';
   };
 
+  if (isLoading) {
+    return (
+      <div style={themedStyles.page}>
+        <h2>Loading words...</h2>
+      </div>
+    );
+  }
+
   if (!wordList.length) {
     return (
       <div style={themedStyles.page}>
-        <h2>No words in local storage.</h2>
+        <h2>No words available.</h2>
         <p>Add some on the "Manage Words" page.</p>
       </div>
     );
@@ -199,36 +360,114 @@ function TypingPage({ themedStyles }) {
 function WordManagerPage({ themedStyles }) {
   const [words, setWords] = useState([]);
   const [newWord, setNewWord] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    setWords(getWordsFromLocalStorage());
-  }, []);
-
-  const addWord = () => {
-    const word = newWord.trim();
-    if (word && !words.includes(word)) {
-      const updated = [...words, word];
-      setWords(updated);
-      setWordsToLocalStorage(updated);
-      setNewWord('');
+  const loadWords = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const wordsList = await storageService.getWords();
+      setWords(wordsList);
+    } catch (error) {
+      console.error('Failed to load words:', error);
+      setError('Failed to load words');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const removeWord = (wordToRemove) => {
-    const updated = words.filter((w) => w !== wordToRemove);
-    setWords(updated);
-    setWordsToLocalStorage(updated);
+  useEffect(() => {
+    loadWords();
+  }, []);
+
+  const addWord = async () => {
+    const word = newWord.trim();
+    if (!word) return;
+    
+    // Check for spaces
+    if (word.includes(' ')) {
+      setError('Word cannot contain spaces');
+      return;
+    }
+    
+    if (words.includes(word)) {
+      setError('Word already exists');
+      return;
+    }
+
+    setError('');
+    const result = await storageService.addWord(word);
+    
+    if (result.success) {
+      setWords([...words, word]);
+      setNewWord('');
+    } else {
+      setError(result.error || 'Failed to add word');
+    }
   };
+
+  const removeWord = async (wordToRemove) => {
+    setError('');
+    const result = await storageService.removeWord(wordToRemove);
+    
+    if (result.success) {
+      setWords(words.filter((w) => w !== wordToRemove));
+    } else {
+      setError(result.error || 'Failed to remove word');
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div style={themedStyles.page}>
+        <h2 style={themedStyles.manageTitle}>Manage Words</h2>
+        <p>Loading words...</p>
+      </div>
+    );
+  }
 
   return (
     <div style={themedStyles.page}>
       <h2 style={themedStyles.manageTitle}>Manage Words</h2>
+      
+      {/* Storage mode indicator */}
+      <div style={themedStyles.storageIndicator}>
+        {storageService.isOnline ? (
+          <span style={themedStyles.onlineIndicator}>
+            🌐 Online Storage (Synced)
+          </span>
+        ) : (
+          <span style={themedStyles.localIndicator}>
+            💾 Local Storage Only
+          </span>
+        )}
+      </div>
+      
+      {error && (
+        <div style={themedStyles.errorMessage}>
+          {error}
+        </div>
+      )}
+      
       <div style={themedStyles.manageInputRow}>
         <input
           type="text"
           value={newWord}
-          onChange={(e) => setNewWord(e.target.value)}
-          placeholder="Enter a new word"
+          onChange={(e) => {
+            // Remove spaces from input
+            const value = e.target.value.replace(/\s/g, '');
+            setNewWord(value);
+          }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter') {
+              addWord();
+            } else if (e.key === ' ') {
+              // Prevent space key from being typed
+              e.preventDefault();
+            }
+          }}
+          placeholder="Enter a new word (no spaces allowed)"
           style={themedStyles.manageInput}
           aria-label="Enter a new word"
         />
@@ -236,6 +475,7 @@ function WordManagerPage({ themedStyles }) {
           Add
         </button>
       </div>
+      
       {words.length === 0 ? (
         <p>No words added yet.</p>
       ) : (
@@ -264,61 +504,94 @@ function getThemedStyles(theme) {
       transition: 'background 0.3s, color 0.3s',
     },
     header: {
-      backgroundColor: isDark ? '#23272a' : '#ffffff',
-      boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.25)' : '0 2px 8px rgba(0,0,0,0.05)',
-      padding: '1rem 2rem',
+      background: isDark 
+        ? 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' 
+        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      boxShadow: isDark 
+        ? '0 4px 20px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)' 
+        : '0 4px 20px rgba(102, 126, 234, 0.15), 0 2px 8px rgba(0,0,0,0.1)',
+      padding: '1.5rem 2rem',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       flexWrap: 'wrap',
-      borderBottom: isDark ? '1px solid #333' : '1px solid #eee',
+      borderBottom: isDark ? '1px solid #34495e' : '1px solid #e0e6ed',
+      position: 'sticky',
+      top: 0,
+      zIndex: 1000,
+      backdropFilter: 'blur(10px)',
     },
     title: {
       margin: 0,
-      fontSize: '1.7rem',
-      fontWeight: 700,
-      color: isDark ? '#f7f7fa' : '#333',
-      fontFamily: 'sans-serif',
-      letterSpacing: '0.02em',
-      textShadow: isDark ? '0 1px 2px #000' : 'none',
+      fontSize: '2rem',
+      fontWeight: 800,
+      color: '#ffffff',
+      fontFamily: "'Segoe UI', 'Roboto', sans-serif",
+      letterSpacing: '0.03em',
+      textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+      background: 'linear-gradient(45deg, #fff, #f0f8ff)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
     },
     nav: {
       display: 'flex',
-      gap: '0.5rem',
-      marginTop: '0.5rem',
+      gap: '1rem',
       alignItems: 'center',
+      flexWrap: 'wrap',
     },
     navLink: {
-      fontSize: '1rem',
-      color: isDark ? '#b3d1f7' : '#3498db',
+      fontSize: '1.1rem',
+      color: '#ffffff',
       textDecoration: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '5px',
-      fontWeight: 500,
-      transition: 'background 0.2s, color 0.2s',
+      padding: '0.7rem 1.2rem',
+      borderRadius: '8px',
+      fontWeight: 600,
+      transition: 'all 0.3s ease',
       cursor: 'pointer',
       border: 'none',
-      background: 'none',
+      background: 'rgba(255, 255, 255, 0.1)',
       outline: 'none',
       position: 'relative',
       display: 'inline-block',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      '&:hover': {
+        background: 'rgba(255, 255, 255, 0.2)',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      },
     },
     navLinkActive: {
-      background: isDark ? '#3498db' : '#eaf6ff',
-      color: isDark ? '#fff' : '#3498db',
+      background: 'rgba(255, 255, 255, 0.25)',
+      color: '#ffffff',
       fontWeight: 700,
-      textDecoration: 'underline',
+      textDecoration: 'none',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      border: '1px solid rgba(255, 255, 255, 0.4)',
     },
     themeToggleBtn: {
-      marginLeft: '1rem',
-      fontSize: '1.1rem',
-      padding: '0.5rem 1rem',
-      borderRadius: '5px',
-      border: isDark ? '1px solid #444' : '1px solid #ccc',
-      background: isDark ? '#23272a' : '#fff',
-      color: isDark ? '#f7f7fa' : '#333',
+      fontSize: '1rem',
+      padding: '0.6rem 1rem',
+      borderRadius: '8px',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      background: 'rgba(255, 255, 255, 0.15)',
+      color: '#ffffff',
       cursor: 'pointer',
-      transition: 'all 0.2s',
+      transition: 'all 0.3s ease',
+      backdropFilter: 'blur(10px)',
+      fontWeight: 600,
+      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      '&:hover': {
+        background: 'rgba(255, 255, 255, 0.25)',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      },
     },
     page: {
       fontFamily: 'sans-serif',
@@ -470,6 +743,147 @@ function getThemedStyles(theme) {
       fontWeight: 500,
       fontSize: '1.1rem',
       color: isDark ? '#f7f7fa' : '#222',
+    },
+    // Storage indicator styles
+    storageIndicator: {
+      textAlign: 'center',
+      marginBottom: '1rem',
+    },
+    onlineIndicator: {
+      display: 'inline-block',
+      padding: '0.4rem 0.8rem',
+      background: isDark ? 'rgba(46, 204, 113, 0.2)' : 'rgba(46, 204, 113, 0.1)',
+      color: isDark ? '#2ecc71' : '#27ae60',
+      borderRadius: '20px',
+      fontSize: '0.9rem',
+      fontWeight: 600,
+      border: isDark ? '1px solid #2ecc71' : '1px solid #27ae60',
+    },
+    localIndicator: {
+      display: 'inline-block',
+      padding: '0.4rem 0.8rem',
+      background: isDark ? 'rgba(52, 152, 219, 0.2)' : 'rgba(52, 152, 219, 0.1)',
+      color: isDark ? '#3498db' : '#2980b9',
+      borderRadius: '20px',
+      fontSize: '0.9rem',
+      fontWeight: 600,
+      border: isDark ? '1px solid #3498db' : '1px solid #2980b9',
+    },
+    // Authentication styles
+    authForm: {
+      maxWidth: '400px',
+      margin: '0 auto',
+    },
+    formGroup: {
+      marginBottom: '1rem',
+    },
+    authInput: {
+      width: '100%',
+      fontSize: '1.1rem',
+      padding: '0.7rem',
+      border: isDark ? '2px solid #444' : '2px solid #ccc',
+      borderRadius: '6px',
+      background: isDark ? '#181a1b' : '#fff',
+      color: isDark ? '#f7f7fa' : '#222',
+      outline: isDark ? '1px solid #3498db' : 'none',
+      transition: 'background 0.3s, color 0.3s',
+      boxSizing: 'border-box',
+    },
+    authButton: {
+      width: '100%',
+      fontSize: '1.1rem',
+      padding: '0.7rem',
+      background: isDark ? '#27ae60' : '#4CAF50',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      transition: 'background 0.2s',
+      fontWeight: 600,
+    },
+    authSwitch: {
+      textAlign: 'center',
+      marginTop: '1.5rem',
+      color: isDark ? '#f7f7fa' : '#222',
+    },
+    authSwitchButton: {
+      background: 'none',
+      border: 'none',
+      color: isDark ? '#3498db' : '#2980b9',
+      cursor: 'pointer',
+      textDecoration: 'underline',
+      fontSize: '1rem',
+      marginLeft: '0.5rem',
+    },
+    errorMessage: {
+      background: isDark ? '#c0392b' : '#ffebee',
+      color: isDark ? '#fff' : '#c62828',
+      padding: '0.7rem',
+      borderRadius: '6px',
+      marginBottom: '1rem',
+      border: isDark ? '1px solid #e74c3c' : '1px solid #f44336',
+    },
+    // User info styles
+    userInfo: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.8rem',
+      background: 'rgba(255, 255, 255, 0.1)',
+      padding: '0.5rem 1rem',
+      borderRadius: '12px',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
+    },
+    // Authentication buttons in header
+    authButtons: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+    },
+    authHeaderBtn: {
+      fontSize: '0.9rem',
+      padding: '0.4rem 0.8rem',
+      background: 'rgba(255, 255, 255, 0.15)',
+      color: '#ffffff',
+      border: '1px solid rgba(255, 255, 255, 0.3)',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      fontWeight: 600,
+      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      backdropFilter: 'blur(10px)',
+      '&:hover': {
+        background: 'rgba(255, 255, 255, 0.25)',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+      },
+    },
+    userName: {
+      fontSize: '1rem',
+      color: '#ffffff',
+      fontWeight: 600,
+      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.3rem',
+    },
+    logoutBtn: {
+      fontSize: '0.9rem',
+      padding: '0.4rem 0.8rem',
+      background: 'rgba(231, 76, 60, 0.8)',
+      color: '#ffffff',
+      border: '1px solid rgba(231, 76, 60, 0.6)',
+      borderRadius: '6px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      fontWeight: 600,
+      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      backdropFilter: 'blur(10px)',
+      '&:hover': {
+        background: 'rgba(231, 76, 60, 1)',
+        transform: 'translateY(-1px)',
+        boxShadow: '0 4px 12px rgba(231, 76, 60, 0.3)',
+      },
     },
   };
 }
