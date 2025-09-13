@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Auto-detect the current port and use the correct API URL
-const currentPort = window.location.port;
-const API_BASE_URL = `http://localhost:5009/api`; // Backend API URL
+// Use the remote API server
+const API_BASE_URL = `http://apiforspelling.somee.com/api`; // Backend API URL
 
 // Create axios instance
 const api = axios.create({
@@ -34,7 +33,7 @@ api.interceptors.response.use(
       // Token expired or invalid
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Don't redirect automatically - let the app handle it
     }
     return Promise.reject(error);
   }

@@ -24,7 +24,7 @@ namespace SpellingTrainer.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<WordResponse>>> GetWords()
+        public async Task<ActionResult<IEnumerable<WordResponse>>> GetWords([FromQuery] string? search = null)
         {
             var userId = GetCurrentUserId();
             if (userId == null)
@@ -32,13 +32,25 @@ namespace SpellingTrainer.API.Controllers
                 return Unauthorized();
             }
 
-            var words = await _context.Words
-                .Where(w => w.UserId == userId)
+            var query = _context.Words.Where(w => w.UserId == userId);
+
+            // Add search functionality
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                query = query.Where(w => 
+                    w.Text.ToLower().Contains(search) || 
+                    (w.Description != null && w.Description.ToLower().Contains(search))
+                );
+            }
+
+            var words = await query
                 .OrderBy(w => w.Text)
                 .Select(w => new WordResponse
                 {
                     Id = w.Id,
                     Text = w.Text,
+                    Description = w.Description,
                     CreatedAt = w.CreatedAt,
                     LastPracticedAt = w.LastPracticedAt,
                     PracticeCount = w.PracticeCount,
@@ -82,6 +94,7 @@ namespace SpellingTrainer.API.Controllers
             var word = new Word
             {
                 Text = request.Text,
+                Description = request.Description,
                 UserId = userId.Value,
                 CreatedAt = DateTime.UtcNow
             };
@@ -93,6 +106,7 @@ namespace SpellingTrainer.API.Controllers
             {
                 Id = word.Id,
                 Text = word.Text,
+                Description = word.Description,
                 CreatedAt = word.CreatedAt,
                 LastPracticedAt = word.LastPracticedAt,
                 PracticeCount = word.PracticeCount,
@@ -117,6 +131,7 @@ namespace SpellingTrainer.API.Controllers
                 {
                     Id = w.Id,
                     Text = w.Text,
+                    Description = w.Description,
                     CreatedAt = w.CreatedAt,
                     LastPracticedAt = w.LastPracticedAt,
                     PracticeCount = w.PracticeCount,
@@ -171,6 +186,7 @@ namespace SpellingTrainer.API.Controllers
             }
 
             word.Text = request.Text;
+            word.Description = request.Description;
             await _context.SaveChangesAsync();
 
             return NoContent();

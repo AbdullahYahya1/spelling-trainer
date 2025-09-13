@@ -14,39 +14,39 @@ class StorageService {
   }
 
   // Get words from storage
-  async getWords() {
+  async getWords(searchTerm = '') {
     if (this.isOnline) {
-      const result = await wordService.getWords();
+      const result = await wordService.getWords(searchTerm);
       if (result.success) {
-        return result.data.map(word => word.text);
+        return result.data;
       } else {
         // Fallback to local storage if online fails
         console.warn('Online storage failed, falling back to local storage');
-        return this.getWordsFromLocalStorage();
+        return this.searchLocalWords(searchTerm);
       }
     } else {
-      return this.getWordsFromLocalStorage();
+      return this.searchLocalWords(searchTerm);
     }
   }
 
   // Add word to storage
-  async addWord(word) {
+  async addWord(word, description = '') {
     // Validate word doesn't contain spaces
     if (word.includes(' ')) {
       return { success: false, error: 'Word cannot contain spaces' };
     }
     
     if (this.isOnline) {
-      const result = await wordService.createWord(word);
+      const result = await wordService.createWord(word, description);
       if (result.success) {
         return { success: true };
       } else {
         // Fallback to local storage if online fails
         console.warn('Online storage failed, falling back to local storage');
-        return this.addWordToLocalStorage(word);
+        return this.addWordToLocalStorage(word, description);
       }
     } else {
-      return this.addWordToLocalStorage(word);
+      return this.addWordToLocalStorage(word, description);
     }
   }
 
@@ -90,22 +90,52 @@ class StorageService {
   // Local storage methods
   getWordsFromLocalStorage() {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    return stored ? stored.split(',').map(w => w.trim()).filter(Boolean) : [];
+    if (!stored) return [];
+    
+    try {
+      return JSON.parse(stored);
+    } catch {
+      // Fallback for old format (just words as comma-separated)
+      return stored.split(',').map(w => w.trim()).filter(Boolean).map(word => ({
+        text: word,
+        description: '',
+        id: Date.now() + Math.random() // Generate temporary ID
+      }));
+    }
   }
 
   setWordsToLocalStorage(words) {
-    localStorage.setItem(LOCAL_STORAGE_KEY, words.join(','));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(words));
   }
 
-  addWordToLocalStorage(word) {
+  // Search local words
+  searchLocalWords(searchTerm) {
+    const words = this.getWordsFromLocalStorage();
+    if (!searchTerm) return words;
+    
+    const search = searchTerm.toLowerCase();
+    return words.filter(word => 
+      word.text.toLowerCase().includes(search) || 
+      (word.description && word.description.toLowerCase().includes(search))
+    );
+  }
+
+  addWordToLocalStorage(word, description = '') {
     // Validate word doesn't contain spaces
     if (word.includes(' ')) {
       return { success: false, error: 'Word cannot contain spaces' };
     }
     
     const words = this.getWordsFromLocalStorage();
-    if (!words.includes(word)) {
-      words.push(word);
+    const existingWord = words.find(w => w.text === word);
+    
+    if (!existingWord) {
+      const newWord = {
+        text: word,
+        description: description,
+        id: Date.now() + Math.random() // Generate temporary ID
+      };
+      words.push(newWord);
       this.setWordsToLocalStorage(words);
       return { success: true };
     }
@@ -114,7 +144,7 @@ class StorageService {
 
   removeWordFromLocalStorage(word) {
     const words = this.getWordsFromLocalStorage();
-    const updated = words.filter(w => w !== word);
+    const updated = words.filter(w => w.text !== word);
     this.setWordsToLocalStorage(updated);
     return { success: true };
   }
@@ -131,11 +161,11 @@ class StorageService {
     }
 
     const onlineWords = onlineResult.data.map(w => w.text);
-    const wordsToAdd = localWords.filter(word => !onlineWords.includes(word));
+    const wordsToAdd = localWords.filter(word => !onlineWords.includes(word.text));
 
     // Add missing words to online storage
     for (const word of wordsToAdd) {
-      await wordService.createWord(word);
+      await wordService.createWord(word.text, word.description || '');
     }
 
     // Clear local storage after successful sync

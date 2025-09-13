@@ -18,7 +18,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [authPage, setAuthPage] = useState('login'); // 'login' or 'register'
+  const [authPage, setAuthPage] = useState(''); // 'login' or 'register' or '' for none
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,8 +29,11 @@ export default function App() {
   useEffect(() => {
     // Check if user is authenticated on app load
     const checkAuth = async () => {
-      if (authService.isAuthenticated()) {
+      const hasToken = authService.isAuthenticated();
+      
+      if (hasToken) {
         const result = await authService.validateToken();
+        
         if (result.success) {
           setIsAuthenticated(true);
           setUser(authService.getCurrentUser());
@@ -38,9 +41,11 @@ export default function App() {
         } else {
           authService.logout();
           storageService.setOnlineMode(false);
+          setAuthPage('login'); // Show login page if token is invalid
         }
       } else {
         storageService.setOnlineMode(false);
+        setAuthPage('login'); // Show login page if no token
       }
       setIsLoading(false);
     };
@@ -99,8 +104,8 @@ export default function App() {
     );
   }
 
-  // Show authentication pages only if user is trying to authenticate
-  if (authPage === 'login' || authPage === 'register') {
+  // Show authentication pages only if user is trying to authenticate and not already authenticated
+  if ((authPage === 'login' || authPage === 'register') && !isAuthenticated) {
     return (
       <div style={themedStyles.appWrapper}>
         <header style={themedStyles.header}>
@@ -222,7 +227,9 @@ function TypingPage({ themedStyles }) {
     setIsLoading(true);
     try {
       const words = await storageService.getWords();
-      setWordList(shuffleArray(words));
+      // Extract just the text for typing practice
+      const wordTexts = words.map(word => typeof word === 'string' ? word : word.text);
+      setWordList(shuffleArray(wordTexts));
     } catch (error) {
       console.error('Failed to load words:', error);
     } finally {
@@ -360,6 +367,8 @@ function TypingPage({ themedStyles }) {
 function WordManagerPage({ themedStyles }) {
   const [words, setWords] = useState([]);
   const [newWord, setNewWord] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -367,7 +376,7 @@ function WordManagerPage({ themedStyles }) {
     setIsLoading(true);
     setError('');
     try {
-      const wordsList = await storageService.getWords();
+      const wordsList = await storageService.getWords(searchTerm);
       setWords(wordsList);
     } catch (error) {
       console.error('Failed to load words:', error);
@@ -379,7 +388,7 @@ function WordManagerPage({ themedStyles }) {
 
   useEffect(() => {
     loadWords();
-  }, []);
+  }, [searchTerm]);
 
   const addWord = async () => {
     const word = newWord.trim();
@@ -397,11 +406,12 @@ function WordManagerPage({ themedStyles }) {
     }
 
     setError('');
-    const result = await storageService.addWord(word);
+    const result = await storageService.addWord(word, newDescription.trim());
     
     if (result.success) {
-      setWords([...words, word]);
+      setWords([...words, { text: word, description: newDescription.trim() }]);
       setNewWord('');
+      setNewDescription('');
     } else {
       setError(result.error || 'Failed to add word');
     }
@@ -412,7 +422,7 @@ function WordManagerPage({ themedStyles }) {
     const result = await storageService.removeWord(wordToRemove);
     
     if (result.success) {
-      setWords(words.filter((w) => w !== wordToRemove));
+      setWords(words.filter((w) => w.text !== wordToRemove));
     } else {
       setError(result.error || 'Failed to remove word');
     }
@@ -444,36 +454,61 @@ function WordManagerPage({ themedStyles }) {
         )}
       </div>
       
+      {/* Search bar */}
+      <div style={themedStyles.searchContainer}>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="🔍 Search words or descriptions..."
+          style={themedStyles.searchInput}
+        />
+      </div>
+      
       {error && (
         <div style={themedStyles.errorMessage}>
           {error}
         </div>
       )}
       
-      <div style={themedStyles.manageInputRow}>
-        <input
-          type="text"
-          value={newWord}
-          onChange={(e) => {
-            // Remove spaces from input
-            const value = e.target.value.replace(/\s/g, '');
-            setNewWord(value);
-          }}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') {
-              addWord();
-            } else if (e.key === ' ') {
-              // Prevent space key from being typed
-              e.preventDefault();
-            }
-          }}
-          placeholder="Enter a new word (no spaces allowed)"
-          style={themedStyles.manageInput}
-          aria-label="Enter a new word"
-        />
-        <button onClick={addWord} style={themedStyles.addBtn}>
-          Add
-        </button>
+      <div style={themedStyles.addWordContainer}>
+        <div style={themedStyles.manageInputRow}>
+          <input
+            type="text"
+            value={newWord}
+            onChange={(e) => {
+              // Remove spaces from input
+              const value = e.target.value.replace(/\s/g, '');
+              setNewWord(value);
+            }}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                addWord();
+              } else if (e.key === ' ') {
+                // Prevent space key from being typed
+                e.preventDefault();
+              }
+            }}
+            placeholder="Enter a new word (no spaces allowed)"
+            style={themedStyles.manageInput}
+            aria-label="Enter a new word"
+          />
+          <button onClick={addWord} style={themedStyles.addBtn}>
+            Add
+          </button>
+        </div>
+        
+        <div style={themedStyles.descriptionRow}>
+          <input
+            type="text"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && addWord()}
+            placeholder="Optional: Add description/meaning (e.g., 'a type of fruit')"
+            style={themedStyles.descriptionInput}
+            aria-label="Enter word description"
+          />
+        </div>
       </div>
       
       {words.length === 0 ? (
@@ -482,8 +517,13 @@ function WordManagerPage({ themedStyles }) {
         <ul style={themedStyles.manageList}>
           {words.map((word, i) => (
             <li key={i} style={themedStyles.manageListItem}>
-              <span style={themedStyles.manageWord}>{word}</span>
-              <button onClick={() => removeWord(word)} style={themedStyles.removeBtn} aria-label={`Remove ${word}`}>
+              <div style={themedStyles.wordContent}>
+                <span style={themedStyles.manageWord}>{word.text}</span>
+                {word.description && (
+                  <span style={themedStyles.wordDescription}>{word.description}</span>
+                )}
+              </div>
+              <button onClick={() => removeWord(word.text)} style={themedStyles.removeBtn} aria-label={`Remove ${word.text}`}>
                 ✕
               </button>
             </li>
@@ -768,6 +808,62 @@ function getThemedStyles(theme) {
       fontSize: '0.9rem',
       fontWeight: 600,
       border: isDark ? '1px solid #3498db' : '1px solid #2980b9',
+    },
+    // Search styles
+    searchContainer: {
+      marginBottom: '1.5rem',
+      textAlign: 'center',
+    },
+    searchInput: {
+      width: '100%',
+      maxWidth: '400px',
+      fontSize: '1rem',
+      padding: '0.7rem 1rem',
+      border: isDark ? '2px solid #444' : '2px solid #ccc',
+      borderRadius: '25px',
+      background: isDark ? '#181a1b' : '#fff',
+      color: isDark ? '#f7f7fa' : '#222',
+      outline: 'none',
+      transition: 'all 0.3s ease',
+      '&:focus': {
+        borderColor: isDark ? '#3498db' : '#2980b9',
+        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(52, 152, 219, 0.1)',
+      },
+    },
+    // Add word container styles
+    addWordContainer: {
+      marginBottom: '1.5rem',
+    },
+    descriptionRow: {
+      marginTop: '0.5rem',
+      display: 'flex',
+      justifyContent: 'center',
+    },
+    descriptionInput: {
+      width: '100%',
+      maxWidth: '400px',
+      fontSize: '0.9rem',
+      padding: '0.5rem 0.8rem',
+      border: isDark ? '1px solid #444' : '1px solid #ccc',
+      borderRadius: '6px',
+      background: isDark ? '#181a1b' : '#fff',
+      color: isDark ? '#f7f7fa' : '#222',
+      outline: 'none',
+      transition: 'all 0.3s ease',
+      fontStyle: 'italic',
+    },
+    // Word content styles
+    wordContent: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.2rem',
+      flex: 1,
+    },
+    wordDescription: {
+      fontSize: '0.85rem',
+      color: isDark ? '#b0b0b0' : '#666',
+      fontStyle: 'italic',
+      marginTop: '0.2rem',
     },
     // Authentication styles
     authForm: {

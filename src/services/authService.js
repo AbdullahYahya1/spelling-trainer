@@ -42,7 +42,11 @@ export const authService = {
       const token = localStorage.getItem('authToken');
       if (!token) return { success: false };
       
-      const response = await api.post('/auth/validate', token);
+      const response = await api.post('/auth/validate', token, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       return { success: true, data: response.data };
     } catch (error) {
       return { success: false };

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SpellingTrainer.API.Data;
 
@@ -11,9 +12,11 @@ using SpellingTrainer.API.Data;
 namespace SpellingTrainer.API.Migrations
 {
     [DbContext(typeof(SpellingTrainerContext))]
-    partial class SpellingTrainerContextModelSnapshot : ModelSnapshot
+    [Migration("20250913162015_AddDescriptionToWord")]
+    partial class AddDescriptionToWord
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

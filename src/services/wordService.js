@@ -1,9 +1,10 @@
 import api from './api';
 
 export const wordService = {
-  async getWords() {
+  async getWords(searchTerm = '') {
     try {
-      const response = await api.get('/words');
+      const url = searchTerm ? `/words?search=${encodeURIComponent(searchTerm)}` : '/words';
+      const response = await api.get(url);
       return { success: true, data: response.data };
     } catch (error) {
       return { 
@@ -13,9 +14,9 @@ export const wordService = {
     }
   },
 
-  async createWord(text) {
+  async createWord(text, description = '') {
     try {
-      const response = await api.post('/words', { text });
+      const response = await api.post('/words', { text, description });
       return { success: true, data: response.data };
     } catch (error) {
       return { 
@@ -25,9 +26,9 @@ export const wordService = {
     }
   },
 
-  async updateWord(id, text) {
+  async updateWord(id, text, description = '') {
     try {
-      await api.put(`/words/${id}`, { text });
+      await api.put(`/words/${id}`, { text, description });
       return { success: true };
     } catch (error) {
       return { 
