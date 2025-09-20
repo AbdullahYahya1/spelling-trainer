@@ -337,7 +337,7 @@ function TypingPage({ themedStyles, theme }) {
             boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
             marginBottom: '1rem',
           }}
-          title={showCurrentWord ? 'Hide word preview' : 'Show word preview'}
+          title={showCurrentWord ? 'Show word content' : 'Hide word content'}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
@@ -347,7 +347,7 @@ function TypingPage({ themedStyles, theme }) {
             e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
           }}
         >
-          {showCurrentWord ? '👁️ Hide Word Preview' : '👁️‍🗨️ Show Word Preview'}
+          {showCurrentWord ? '👁️ Show Word' : '🙈 Hide Word'}
         </button>
       </div>
       
@@ -360,24 +360,35 @@ function TypingPage({ themedStyles, theme }) {
                 style={{
                   marginRight: '0.8rem',
                   borderBottom: '2px solid #3498db',
-                  filter: showCurrentWord && !hasStartedTyping ? 'blur(3px)' : 'none',
-                  transition: 'filter 0.3s ease',
+                  transition: 'all 0.3s ease',
                 }}
               >
-                {word.split('').map((char, idx) => {
-                  const typedChar = currentInput[idx];
-                  const color =
-                    typedChar == null
-                      ? 'gray'
-                      : typedChar === char
-                      ? 'green'
-                      : 'red';
-                  return (
-                    <span key={idx} style={{ color }}>
-                      {char}
-                    </span>
-                  );
-                })}
+                {showCurrentWord && !hasStartedTyping ? (
+                  <span style={{ 
+                    color: 'transparent', 
+                    userSelect: 'none',
+                    pointerEvents: 'none'
+                  }}>
+                    {word.split('').map((_, idx) => (
+                      <span key={idx}>•</span>
+                    ))}
+                  </span>
+                ) : (
+                  word.split('').map((char, idx) => {
+                    const typedChar = currentInput[idx];
+                    const color =
+                      typedChar == null
+                        ? 'gray'
+                        : typedChar === char
+                        ? 'green'
+                        : 'red';
+                    return (
+                      <span key={idx} style={{ color }}>
+                        {char}
+                      </span>
+                    );
+                  })
+                )}
               </span>
             );
           } else {
