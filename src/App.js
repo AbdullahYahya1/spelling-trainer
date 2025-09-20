@@ -253,7 +253,7 @@ function TypingPage({ themedStyles, theme }) {
     // Track if user has started typing
     if (val.length > 0 && !hasStartedTyping) {
       setHasStartedTyping(true);
-      // Don't hide the word preview, just remove blur
+      setShowCurrentWord(false); // Hide word when user starts typing
     }
     
     if (val.endsWith(' ')) {
@@ -264,7 +264,7 @@ function TypingPage({ themedStyles, theme }) {
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
       setHasStartedTyping(false); // Reset for next word
-      // Keep showCurrentWord state for next word
+      setShowCurrentWord(false); // Hide word when moving to next
       
       // Record practice result
       if (wordList[currentWordIndex]) {
@@ -279,7 +279,7 @@ function TypingPage({ themedStyles, theme }) {
     setTypedWords([]);
     setCurrentInput('');
     setHasStartedTyping(false);
-    // Keep showCurrentWord state
+    setShowCurrentWord(false);
     loadWords();
     inputRef.current?.focus();
   };
@@ -337,7 +337,7 @@ function TypingPage({ themedStyles, theme }) {
             boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
             marginBottom: '1rem',
           }}
-          title={showCurrentWord ? 'Show word content' : 'Hide word content'}
+          title={showCurrentWord ? 'Hide word preview' : 'Show word preview'}
           onMouseEnter={(e) => {
             e.target.style.transform = 'translateY(-2px)';
             e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
@@ -347,7 +347,7 @@ function TypingPage({ themedStyles, theme }) {
             e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
           }}
         >
-          {showCurrentWord ? '👁️ Show Word' : '🙈 Hide Word'}
+          {showCurrentWord ? '🙈 Hide Word' : '👁️ Show Word'}
         </button>
       </div>
       
@@ -363,7 +363,7 @@ function TypingPage({ themedStyles, theme }) {
                   transition: 'all 0.3s ease',
                 }}
               >
-                {showCurrentWord && !hasStartedTyping ? (
+                {!showCurrentWord && !hasStartedTyping ? (
                   <span style={{ 
                     color: 'transparent', 
                     userSelect: 'none',
