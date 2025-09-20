@@ -221,8 +221,8 @@ function TypingPage({ themedStyles, theme }) {
   const [typedWords, setTypedWords] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [showCurrentWord, setShowCurrentWord] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
+  const [showList, setShowList] = useState(false);
   const inputRef = useRef(null);
 
   const loadWords = async () => {
@@ -253,7 +253,6 @@ function TypingPage({ themedStyles, theme }) {
     // Track if user has started typing
     if (val.length > 0 && !hasStartedTyping) {
       setHasStartedTyping(true);
-      setShowCurrentWord(false); // Hide word when user starts typing
     }
     
     if (val.endsWith(' ')) {
@@ -264,7 +263,6 @@ function TypingPage({ themedStyles, theme }) {
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
       setHasStartedTyping(false); // Reset for next word
-      setShowCurrentWord(false); // Hide word when moving to next
       
       // Record practice result
       if (wordList[currentWordIndex]) {
@@ -279,14 +277,10 @@ function TypingPage({ themedStyles, theme }) {
     setTypedWords([]);
     setCurrentInput('');
     setHasStartedTyping(false);
-    setShowCurrentWord(false);
     loadWords();
     inputRef.current?.focus();
   };
 
-  const handleCheckWord = () => {
-    setShowCurrentWord(!showCurrentWord);
-  };
 
   const getWordStatus = (word, i) => {
     const typed = typedWords[i];
@@ -318,42 +312,25 @@ function TypingPage({ themedStyles, theme }) {
         Typing Practice {currentInput && <span style={{ color: 'gray' }}>&quot;{currentInput}&quot;</span>}
       </h2>
       
-      {/* Check button above the word area */}
-      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-        <button
-          onClick={handleCheckWord}
+      <div style={themedStyles.controlsContainer}>
+        <button 
+          onClick={() => setShowList(!showList)} 
           style={{
-            background: showCurrentWord 
-              ? (theme === 'dark' ? '#e74c3c' : '#c0392b')
-              : (theme === 'dark' ? '#27ae60' : '#4CAF50'),
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '0.6rem 1.2rem',
-            fontSize: '1rem',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            fontWeight: '600',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-            marginBottom: '1rem',
-          }}
-          title={showCurrentWord ? 'Hide word preview' : 'Show word preview'}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            ...themedStyles.showListBtn,
+            background: showList ? (theme === 'dark' ? '#27ae60' : '#4CAF50') : (theme === 'dark' ? '#444' : '#ccc'),
+            color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#222')
           }}
         >
-          {showCurrentWord ? '🙈 Hide Word' : '👁️ Show Word'}
+          {showList ? '👁️ Hide List' : '👁️ Show List'}
         </button>
       </div>
       
       <div style={themedStyles.wordContainer}>
         {wordList.map((word, i) => {
           if (i === typedWords.length) {
+            // Hide current word if showList is enabled and student has started typing
+            const shouldHideCurrentWord = showList && hasStartedTyping && currentInput.length > 0;
+            
             return (
               <span
                 key={i}
@@ -361,34 +338,23 @@ function TypingPage({ themedStyles, theme }) {
                   marginRight: '0.8rem',
                   borderBottom: '2px solid #3498db',
                   transition: 'all 0.3s ease',
+                  visibility: shouldHideCurrentWord ? 'hidden' : 'visible',
                 }}
               >
-                {!showCurrentWord && !hasStartedTyping ? (
-                  <span style={{ 
-                    color: 'transparent', 
-                    userSelect: 'none',
-                    pointerEvents: 'none'
-                  }}>
-                    {word.split('').map((_, idx) => (
-                      <span key={idx}>•</span>
-                    ))}
-                  </span>
-                ) : (
-                  word.split('').map((char, idx) => {
-                    const typedChar = currentInput[idx];
-                    const color =
-                      typedChar == null
-                        ? 'gray'
-                        : typedChar === char
-                        ? 'green'
-                        : 'red';
-                    return (
-                      <span key={idx} style={{ color }}>
-                        {char}
-                      </span>
-                    );
-                  })
-                )}
+                {word.split('').map((char, idx) => {
+                  const typedChar = currentInput[idx];
+                  const color =
+                    typedChar == null
+                      ? 'gray'
+                      : typedChar === char
+                      ? 'green'
+                      : 'red';
+                  return (
+                    <span key={idx} style={{ color }}>
+                      {char}
+                    </span>
+                  );
+                })}
               </span>
             );
           } else {
@@ -728,6 +694,29 @@ function getThemedStyles(theme) {
       marginBottom: '1rem',
       lineHeight: '2.5rem',
       marginTop: '100px',
+    },
+    controlsContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      marginBottom: '1rem',
+      gap: '1rem',
+    },
+    showListBtn: {
+      fontSize: '1rem',
+      padding: '0.6rem 1.2rem',
+      borderRadius: '8px',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      fontWeight: 600,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.3rem',
+      boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.2)',
+      },
     },
     wordItem: {
       listStyle: 'none',
