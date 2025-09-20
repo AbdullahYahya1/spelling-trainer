@@ -211,16 +211,18 @@ export default function App() {
           </button>
         </nav>
       </header>
-      {page === 'typing' ? <TypingPage themedStyles={themedStyles} /> : <WordManagerPage themedStyles={themedStyles} />}
+      {page === 'typing' ? <TypingPage themedStyles={themedStyles} theme={theme} /> : <WordManagerPage themedStyles={themedStyles} />}
     </div>
   );
 }
 
-function TypingPage({ themedStyles }) {
+function TypingPage({ themedStyles, theme }) {
   const [wordList, setWordList] = useState([]);
   const [typedWords, setTypedWords] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [showCurrentWord, setShowCurrentWord] = useState(false);
+  const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const inputRef = useRef(null);
 
   const loadWords = async () => {
@@ -247,6 +249,13 @@ function TypingPage({ themedStyles }) {
 
   const handleInputChange = async (e) => {
     const val = e.target.value;
+    
+    // Track if user has started typing
+    if (val.length > 0 && !hasStartedTyping) {
+      setHasStartedTyping(true);
+      setShowCurrentWord(false); // Hide word when user starts typing
+    }
+    
     if (val.endsWith(' ')) {
       const word = val.trim();
       const currentWordIndex = typedWords.length;
@@ -254,6 +263,8 @@ function TypingPage({ themedStyles }) {
       
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
+      setHasStartedTyping(false); // Reset for next word
+      setShowCurrentWord(false); // Hide word when moving to next
       
       // Record practice result
       if (wordList[currentWordIndex]) {
@@ -267,8 +278,16 @@ function TypingPage({ themedStyles }) {
   const resetTest = () => {
     setTypedWords([]);
     setCurrentInput('');
+    setShowCurrentWord(false);
+    setHasStartedTyping(false);
     loadWords();
     inputRef.current?.focus();
+  };
+
+  const handleCheckWord = () => {
+    if (!hasStartedTyping) {
+      setShowCurrentWord(!showCurrentWord);
+    }
   };
 
   const getWordStatus = (word, i) => {
@@ -309,22 +328,65 @@ function TypingPage({ themedStyles }) {
                 style={{
                   marginRight: '0.8rem',
                   borderBottom: '2px solid #3498db',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
                 }}
               >
-                {word.split('').map((char, idx) => {
-                  const typedChar = currentInput[idx];
-                  const color =
-                    typedChar == null
-                      ? 'gray'
-                      : typedChar === char
-                      ? 'green'
-                      : 'red';
-                  return (
-                    <span key={idx} style={{ color }}>
-                      {char}
-                    </span>
-                  );
-                })}
+                {showCurrentWord && !hasStartedTyping ? (
+                  <span style={{ color: '#3498db', fontWeight: 'bold' }}>
+                    {word}
+                  </span>
+                ) : (
+                  word.split('').map((char, idx) => {
+                    const typedChar = currentInput[idx];
+                    const color =
+                      typedChar == null
+                        ? 'gray'
+                        : typedChar === char
+                        ? 'green'
+                        : 'red';
+                    return (
+                      <span key={idx} style={{ color }}>
+                        {char}
+                      </span>
+                    );
+                  })
+                )}
+                {!hasStartedTyping && (
+                  <button
+                    onClick={handleCheckWord}
+                    style={{
+                      background: showCurrentWord 
+                        ? (theme === 'dark' ? '#e74c3c' : '#c0392b')
+                        : (theme === 'dark' ? '#27ae60' : '#4CAF50'),
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.3rem 0.6rem',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      fontWeight: '600',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                      '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
+                      }
+                    }}
+                    title={showCurrentWord ? 'Hide word' : 'Show word'}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-1px)';
+                      e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+                    }}
+                  >
+                    {showCurrentWord ? '👁️ Hide' : '👁️‍🗨️ Show'}
+                  </button>
+                )}
               </span>
             );
           } else {
