@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { authService } from './services/authService';
 import { storageService } from './services/storageService';
 import Login from './components/Login';
@@ -253,7 +253,7 @@ function TypingPage({ themedStyles, theme }) {
     // Track if user has started typing
     if (val.length > 0 && !hasStartedTyping) {
       setHasStartedTyping(true);
-      setShowCurrentWord(false); // Hide word when user starts typing
+      // Don't hide the word preview, just remove blur
     }
     
     if (val.endsWith(' ')) {
@@ -264,7 +264,7 @@ function TypingPage({ themedStyles, theme }) {
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
       setHasStartedTyping(false); // Reset for next word
-      setShowCurrentWord(false); // Hide word when moving to next
+      // Keep showCurrentWord state for next word
       
       // Record practice result
       if (wordList[currentWordIndex]) {
@@ -278,16 +278,14 @@ function TypingPage({ themedStyles, theme }) {
   const resetTest = () => {
     setTypedWords([]);
     setCurrentInput('');
-    setShowCurrentWord(false);
     setHasStartedTyping(false);
+    // Keep showCurrentWord state
     loadWords();
     inputRef.current?.focus();
   };
 
   const handleCheckWord = () => {
-    if (!hasStartedTyping) {
-      setShowCurrentWord(!showCurrentWord);
-    }
+    setShowCurrentWord(!showCurrentWord);
   };
 
   const getWordStatus = (word, i) => {
@@ -319,6 +317,40 @@ function TypingPage({ themedStyles, theme }) {
       <h2>
         Typing Practice {currentInput && <span style={{ color: 'gray' }}>&quot;{currentInput}&quot;</span>}
       </h2>
+      
+      {/* Check button above the word area */}
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <button
+          onClick={handleCheckWord}
+          style={{
+            background: showCurrentWord 
+              ? (theme === 'dark' ? '#e74c3c' : '#c0392b')
+              : (theme === 'dark' ? '#27ae60' : '#4CAF50'),
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '0.6rem 1.2rem',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            fontWeight: '600',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            marginBottom: '1rem',
+          }}
+          title={showCurrentWord ? 'Hide word preview' : 'Show word preview'}
+          onMouseEnter={(e) => {
+            e.target.style.transform = 'translateY(-2px)';
+            e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.transform = 'translateY(0)';
+            e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+          }}
+        >
+          {showCurrentWord ? '👁️ Hide Word Preview' : '👁️‍🗨️ Show Word Preview'}
+        </button>
+      </div>
+      
       <div style={themedStyles.wordContainer}>
         {wordList.map((word, i) => {
           if (i === typedWords.length) {
@@ -328,65 +360,24 @@ function TypingPage({ themedStyles, theme }) {
                 style={{
                   marginRight: '0.8rem',
                   borderBottom: '2px solid #3498db',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
+                  filter: showCurrentWord && !hasStartedTyping ? 'blur(3px)' : 'none',
+                  transition: 'filter 0.3s ease',
                 }}
               >
-                {showCurrentWord && !hasStartedTyping ? (
-                  <span style={{ color: '#3498db', fontWeight: 'bold' }}>
-                    {word}
-                  </span>
-                ) : (
-                  word.split('').map((char, idx) => {
-                    const typedChar = currentInput[idx];
-                    const color =
-                      typedChar == null
-                        ? 'gray'
-                        : typedChar === char
-                        ? 'green'
-                        : 'red';
-                    return (
-                      <span key={idx} style={{ color }}>
-                        {char}
-                      </span>
-                    );
-                  })
-                )}
-                {!hasStartedTyping && (
-                  <button
-                    onClick={handleCheckWord}
-                    style={{
-                      background: showCurrentWord 
-                        ? (theme === 'dark' ? '#e74c3c' : '#c0392b')
-                        : (theme === 'dark' ? '#27ae60' : '#4CAF50'),
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      padding: '0.3rem 0.6rem',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      fontWeight: '600',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                      '&:hover': {
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
-                      }
-                    }}
-                    title={showCurrentWord ? 'Hide word' : 'Show word'}
-                    onMouseEnter={(e) => {
-                      e.target.style.transform = 'translateY(-1px)';
-                      e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-                    }}
-                  >
-                    {showCurrentWord ? '👁️ Hide' : '👁️‍🗨️ Show'}
-                  </button>
-                )}
+                {word.split('').map((char, idx) => {
+                  const typedChar = currentInput[idx];
+                  const color =
+                    typedChar == null
+                      ? 'gray'
+                      : typedChar === char
+                      ? 'green'
+                      : 'red';
+                  return (
+                    <span key={idx} style={{ color }}>
+                      {char}
+                    </span>
+                  );
+                })}
               </span>
             );
           } else {
@@ -434,7 +425,7 @@ function WordManagerPage({ themedStyles }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const loadWords = async () => {
+  const loadWords = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
@@ -446,11 +437,11 @@ function WordManagerPage({ themedStyles }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [searchTerm]);
 
   useEffect(() => {
     loadWords();
-  }, [searchTerm]);
+  }, [searchTerm, loadWords]);
 
   const addWord = async () => {
     const word = newWord.trim();
@@ -654,13 +645,12 @@ function getThemedStyles(theme) {
       fontWeight: 600,
       transition: 'all 0.3s ease',
       cursor: 'pointer',
-      border: 'none',
+      border: '1px solid rgba(255, 255, 255, 0.2)',
       background: 'rgba(255, 255, 255, 0.1)',
       outline: 'none',
       position: 'relative',
       display: 'inline-block',
       backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
       textShadow: '0 1px 2px rgba(0,0,0,0.2)',
       '&:hover': {
         background: 'rgba(255, 255, 255, 0.2)',
