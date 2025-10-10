@@ -1,70 +1,218 @@
-# Getting Started with Create React App
+# Spelling Trainer
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A full-stack spelling practice application with React frontend and .NET Core API backend.
 
-## Available Scripts
+## 🚀 Quick Start
 
-In the project directory, you can run:
+### Prerequisites
+- Node.js (v16 or higher)
+- .NET 9 SDK
+- PowerShell (for deployment)
 
-### `npm start`
+### Project Structure
+```
+spelling-trainer/
+├── backend/SpellingTrainer.API/     # .NET Core API
+├── src/                             # React frontend
+├── public/                          # Static assets
+├── deploy-api.ps1                   # API deployment script
+├── upload.ps1                       # Legacy uploader
+└── README.md                        # This file
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🛠️ Development Setup
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 1. Backend API Setup
+```bash
+# Navigate to API directory
+cd backend/SpellingTrainer.API
 
-### `npm test`
+# Restore packages
+dotnet restore
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Run database migrations
+dotnet ef database update
 
-### `npm run build`
+# Start the API (runs on http://localhost:5009)
+dotnet run
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 2. Frontend Setup
+```bash
+# Install dependencies
+npm install
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+# Start development server (runs on http://localhost:3000)
+npm start
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 📦 Build & Deploy
 
-### `npm run eject`
+### API Deployment
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The API is deployed to `https://apiforspelling.somee.com` using FTP.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+#### Option 1: Automated Deployment (Recommended)
+```powershell
+# Build and deploy everything
+.\deploy-api.ps1
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+# Only build (don't upload)
+.\deploy-api.ps1 -BuildOnly
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# Only upload existing build
+.\deploy-api.ps1 -UploadOnly
 
-## Learn More
+# Show help
+.\deploy-api.ps1 -Help
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+#### Option 2: Manual Steps
+```bash
+# 1. Build the API
+cd backend/SpellingTrainer.API
+dotnet publish -c Release -o publish --self-contained false
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+# 2. Upload using the legacy script
+cd ../..
+.\upload.ps1
+```
 
-### Code Splitting
+### Frontend Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+The frontend is deployed to Vercel at `https://spelling-trainer-ruby.vercel.app`.
 
-### Analyzing the Bundle Size
+```bash
+# Build for production
+npm run build
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+# Deploy to Vercel (if you have Vercel CLI)
+vercel --prod
+```
 
-### Making a Progressive Web App
+## 🔧 Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### API Configuration
+- **Database**: SQL Server (configured in `appsettings.json`)
+- **Authentication**: JWT tokens
+- **CORS**: Configured for frontend domains
+- **Swagger**: Available at `/swagger` endpoint
 
-### Advanced Configuration
+### Frontend Configuration
+- **API Endpoint**: `https://apiforspelling.somee.com`
+- **Theme**: Dark/Light mode support
+- **Storage**: Local storage with online sync
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 📋 API Endpoints
 
-### Deployment
+### Authentication
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/validate` - Validate JWT token
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Words
+- `GET /api/words` - Get all words
+- `POST /api/words` - Add new word
+- `PUT /api/words/{id}` - Update word
+- `DELETE /api/words/{id}` - Delete word
 
-### `npm run build` fails to minify
+### Streaks
+- `GET /api/streak` - Get user streak
+- `PUT /api/streak` - Update streak
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## 🗄️ Database
+
+The application uses Entity Framework Core with SQL Server:
+
+### Models
+- **User**: User accounts with authentication
+- **Word**: Spelling words with descriptions
+- **Streak**: User practice streaks
+
+### Migrations
+```bash
+# Add new migration
+dotnet ef migrations add MigrationName
+
+# Update database
+dotnet ef database update
+```
+
+## 🧪 Testing
+
+### API Testing
+```bash
+# Test login
+curl -X POST "https://apiforspelling.somee.com/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"string","password":"string"}'
+
+# Test streak (requires JWT token)
+curl -X GET "https://apiforspelling.somee.com/api/streak" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Frontend Testing
+```bash
+# Run tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **API not starting**
+   - Check if port 5009 is available
+   - Verify database connection string
+   - Run `dotnet ef database update`
+
+2. **Frontend not connecting to API**
+   - Check API URL in `src/services/api.js`
+   - Verify CORS configuration in API
+   - Check browser console for errors
+
+3. **Deployment fails**
+   - Verify FTP credentials in `deploy-api.ps1`
+   - Check if publish folder exists
+   - Run with `-BuildOnly` first to test build
+
+### Logs
+- **API Logs**: Check console output when running `dotnet run`
+- **Frontend Logs**: Check browser developer console
+- **Deployment Logs**: Check PowerShell output
+
+## 📝 Development Notes
+
+### Adding New Features
+1. **API**: Add controllers, models, and DTOs
+2. **Database**: Create migrations for schema changes
+3. **Frontend**: Update services and components
+4. **Deploy**: Use `deploy-api.ps1` for API updates
+
+### Code Style
+- **Backend**: Follow C# conventions
+- **Frontend**: Use functional components with hooks
+- **Database**: Use Entity Framework conventions
+
+## 🔐 Security
+
+- JWT tokens for authentication
+- Password hashing with BCrypt
+- CORS configured for specific domains
+- Input validation on all endpoints
+
+## 📞 Support
+
+For issues or questions:
+1. Check this README
+2. Review error logs
+3. Test with curl commands
+4. Verify configuration files
+
+---
+
+**Happy Spelling! 🎯**

@@ -1,33 +1,21 @@
 @echo off
 echo ========================================
-echo   BACKEND DEPLOYMENT SCRIPT
+echo   Spelling Trainer API Deployer
 echo ========================================
 echo.
 
-echo Step 1: Building backend...
-cd backend\SpellingTrainer.API
-dotnet publish --configuration Release --output ./publish
+REM Check if PowerShell is available
+powershell -Command "Get-Host" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: Build failed!
+    echo Error: PowerShell is not available
     pause
     exit /b 1
 )
-echo ✓ Build completed successfully
-echo.
 
-echo Step 2: Uploading files to FTP...
-cd ..\..
-powershell -ExecutionPolicy Bypass -File upload.ps1
-if %errorlevel% neq 0 (
-    echo ERROR: Upload failed!
-    pause
-    exit /b 1
-)
-echo ✓ Upload completed successfully
-echo.
+REM Run the PowerShell deployer
+echo Starting deployment...
+powershell -ExecutionPolicy Bypass -File "deploy-api.ps1"
 
-echo ========================================
-echo   DEPLOYMENT COMPLETED SUCCESSFULLY!
-echo   API URL: https://apiforspelling.somee.com
-echo ========================================
+echo.
+echo Deployment completed!
 pause
