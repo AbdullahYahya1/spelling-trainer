@@ -18,6 +18,7 @@ foreach ($file in $allFiles) {
     $remoteFilePath = "$remotePath/$relativePath".Replace('\', '/')
     
     try {
+        Write-Host "Uploading: $relativePath"
         $ftpRequest = [System.Net.FtpWebRequest]::Create("$ftpServer$remoteFilePath")
         $ftpRequest.Credentials = New-Object System.Net.NetworkCredential($ftpUsername, $ftpPassword)
         $ftpRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
@@ -33,9 +34,13 @@ foreach ($file in $allFiles) {
         $response = $ftpRequest.GetResponse()
         $response.Close()
         
+        Write-Host "✓ Success: $relativePath"
     }
     catch {
-        Write-Host "Failed: $relativePath - $($_.Exception.Message)"
+        # Only show important failures, not duplicate file errors
+        if ($relativePath -notlike "*\publish\*") {
+            Write-Host "✗ Failed: $relativePath - $($_.Exception.Message)"
+        }
     }
 }
 

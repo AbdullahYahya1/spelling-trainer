@@ -20,11 +20,19 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authPage, setAuthPage] = useState(''); // 'login' or 'register' or '' for none
   const [isLoading, setIsLoading] = useState(true);
+  const [streak, setStreak] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
     document.body.style.background = theme === 'dark' ? '#181a1b' : '#f7f7fa';
   }, [theme]);
+
+  // Load streak when user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadStreak();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     // Check if user is authenticated on app load
@@ -46,7 +54,7 @@ export default function App() {
           
           // Show a brief message if token was expired
           if (result.expired) {
-            console.log('Session expired. Please login again.');
+            // Session expired, user will be redirected to login
           }
         }
       } else {
@@ -69,7 +77,6 @@ export default function App() {
         return;
       } else {
         // Token has expired, logout user
-        console.log('Token expired during session, logging out...');
         authService.logout();
         setIsAuthenticated(false);
         setUser(null);
@@ -94,7 +101,7 @@ export default function App() {
     // Sync local words to online storage
     const syncResult = await storageService.syncLocalToOnline();
     if (syncResult.success && syncResult.synced > 0) {
-      console.log(`Synced ${syncResult.synced} words to online storage`);
+      // Words synced to online storage
     }
     
     // Redirect to main app
@@ -109,7 +116,7 @@ export default function App() {
     // Sync local words to online storage
     const syncResult = await storageService.syncLocalToOnline();
     if (syncResult.success && syncResult.synced > 0) {
-      console.log(`Synced ${syncResult.synced} words to online storage`);
+      // Words synced to online storage
     }
     
     // Redirect to main app
@@ -120,7 +127,47 @@ export default function App() {
     authService.logout();
     setIsAuthenticated(false);
     setUser(null);
+    setStreak(null);
     storageService.setOnlineMode(false);
+  };
+
+  const loadStreak = async () => {
+    try {
+      const response = await fetch('https://apiforspelling.somee.com/api/streak', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const streakData = await response.json();
+        setStreak(streakData);
+      } else {
+        console.error('Streak API error:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to load streak:', error);
+    }
+  };
+
+  const updateStreak = async () => {
+    try {
+      const response = await fetch('https://apiforspelling.somee.com/api/streak', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const streakData = await response.json();
+        setStreak(streakData);
+      }
+    } catch (error) {
+      console.error('Failed to update streak:', error);
+    }
   };
 
   const themedStyles = getThemedStyles(theme);
@@ -204,16 +251,36 @@ export default function App() {
           </a>
           
           {isAuthenticated ? (
-            <div style={themedStyles.userInfo}>
-              <span style={themedStyles.userName}>👤 {user?.username}</span>
-              <button
-                onClick={handleLogout}
-                style={themedStyles.logoutBtn}
-                aria-label="Logout"
-              >
-                Logout
-              </button>
-            </div>
+            <>
+              <div style={themedStyles.userInfo}>
+                <span style={themedStyles.userName}>👤 {user?.username}</span>
+                <button
+                  onClick={handleLogout}
+                  style={themedStyles.logoutBtn}
+                  aria-label="Logout"
+                >
+                  Logout
+                </button>
+              </div>
+              
+              {/* Streak Display in Header */}
+              <div style={themedStyles.headerStreak}>
+                {streak ? (
+                  <div style={themedStyles.headerStreakContent}>
+                    <span style={themedStyles.headerStreakCurrent}>
+                      🔥 {streak.currentStreak}
+                    </span>
+                    <span style={themedStyles.headerStreakBest}>
+                      Best: {streak.longestStreak}
+                    </span>
+                  </div>
+                ) : (
+                  <div style={themedStyles.headerStreakLoading}>
+                    🔥 Loading...
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <div style={themedStyles.authButtons}>
               <button
@@ -242,19 +309,18 @@ export default function App() {
           </button>
         </nav>
       </header>
-      {page === 'typing' ? <TypingPage themedStyles={themedStyles} theme={theme} /> : <WordManagerPage themedStyles={themedStyles} />}
+      {page === 'typing' ? <TypingPage themedStyles={themedStyles} theme={theme} streak={streak} updateStreak={updateStreak} /> : <WordManagerPage themedStyles={themedStyles} />}
     </div>
   );
 }
 
-function TypingPage({ themedStyles, theme }) {
+function TypingPage({ themedStyles, theme, streak, updateStreak }) {
   const [wordList, setWordList] = useState([]);
   const [typedWords, setTypedWords] = useState([]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [showList, setShowList] = useState(false);
-  const [streak, setStreak] = useState(null);
   const inputRef = useRef(null);
 
   const loadWords = async () => {
@@ -271,46 +337,8 @@ function TypingPage({ themedStyles, theme }) {
     }
   };
 
-  const loadStreak = async () => {
-    try {
-      const response = await fetch('https://apiforspelling.somee.com/api/streak', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const streakData = await response.json();
-        setStreak(streakData);
-      }
-    } catch (error) {
-      console.error('Failed to load streak:', error);
-    }
-  };
-
-  const updateStreak = async () => {
-    try {
-      const response = await fetch('https://apiforspelling.somee.com/api/streak', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const streakData = await response.json();
-        setStreak(streakData);
-      }
-    } catch (error) {
-      console.error('Failed to update streak:', error);
-    }
-  };
-
   useEffect(() => {
     loadWords();
-    loadStreak();
   }, []);
 
   useEffect(() => {
@@ -387,24 +415,6 @@ function TypingPage({ themedStyles, theme }) {
         Typing Practice {currentInput && <span style={{ color: 'gray' }}>&quot;{currentInput}&quot;</span>}
       </h2>
       
-      {/* Streak Display */}
-      {streak && (
-        <div style={themedStyles.streakContainer}>
-          <div style={themedStyles.streakCard}>
-            <div style={themedStyles.streakCurrent}>
-              🔥 {streak.currentStreak} day{streak.currentStreak !== 1 ? 's' : ''}
-            </div>
-            <div style={themedStyles.streakLongest}>
-              Best: {streak.longestStreak} day{streak.longestStreak !== 1 ? 's' : ''}
-            </div>
-            {!streak.isStreakActive && (
-              <div style={themedStyles.streakWarning}>
-                ⚠️ Streak broken! Start practicing to build a new streak!
-              </div>
-            )}
-          </div>
-        </div>
-      )}
       
       <div style={themedStyles.controlsContainer}>
         <button 
@@ -1158,6 +1168,39 @@ function getThemedStyles(theme) {
         transform: 'translateY(-1px)',
         boxShadow: '0 4px 12px rgba(231, 76, 60, 0.3)',
       },
+    },
+    // Header streak styles
+    headerStreak: {
+      display: 'flex',
+      alignItems: 'center',
+      background: 'rgba(255, 107, 107, 0.15)',
+      padding: '0.4rem 0.8rem',
+      borderRadius: '8px',
+      border: '1px solid rgba(255, 107, 107, 0.3)',
+      backdropFilter: 'blur(10px)',
+    },
+    headerStreakContent: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '0.2rem',
+    },
+    headerStreakCurrent: {
+      fontSize: '1.1rem',
+      fontWeight: 'bold',
+      color: '#ffffff',
+      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+    },
+    headerStreakBest: {
+      fontSize: '0.7rem',
+      color: '#ffffff',
+      opacity: 0.8,
+      textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+    },
+    headerStreakLoading: {
+      fontSize: '1.1rem',
+      color: '#ffffff',
+      opacity: 0.8,
     },
   };
 }
