@@ -39,9 +39,15 @@ export default function App() {
           setUser(authService.getCurrentUser());
           storageService.setOnlineMode(true);
         } else {
+          // Token is invalid or expired
           authService.logout();
           storageService.setOnlineMode(false);
           setAuthPage('login'); // Show login page if token is invalid
+          
+          // Show a brief message if token was expired
+          if (result.expired) {
+            console.log('Session expired. Please login again.');
+          }
         }
       } else {
         storageService.setOnlineMode(false);
@@ -52,6 +58,31 @@ export default function App() {
 
     checkAuth();
   }, []);
+
+  // Periodic token expiration check
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const checkTokenExpiration = () => {
+      if (authService.isAuthenticated()) {
+        // Token is still valid
+        return;
+      } else {
+        // Token has expired, logout user
+        console.log('Token expired during session, logging out...');
+        authService.logout();
+        setIsAuthenticated(false);
+        setUser(null);
+        storageService.setOnlineMode(false);
+        setAuthPage('login');
+      }
+    };
+
+    // Check every 5 minutes
+    const interval = setInterval(checkTokenExpiration, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 

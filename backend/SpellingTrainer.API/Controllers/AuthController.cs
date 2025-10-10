@@ -56,7 +56,7 @@ namespace SpellingTrainer.API.Controllers
                 Token = token,
                 Username = user.Username,
                 Email = user.Email,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+                ExpiresAt = DateTime.UtcNow.AddDays(30)
             });
         }
 
@@ -82,7 +82,7 @@ namespace SpellingTrainer.API.Controllers
                 Token = token,
                 Username = user.Username,
                 Email = user.Email,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+                ExpiresAt = DateTime.UtcNow.AddDays(30)
             });
         }
 
