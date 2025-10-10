@@ -254,6 +254,7 @@ function TypingPage({ themedStyles, theme }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [showList, setShowList] = useState(false);
+  const [streak, setStreak] = useState(null);
   const inputRef = useRef(null);
 
   const loadWords = async () => {
@@ -270,8 +271,46 @@ function TypingPage({ themedStyles, theme }) {
     }
   };
 
+  const loadStreak = async () => {
+    try {
+      const response = await fetch('https://apiforspelling.somee.com/api/streak', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const streakData = await response.json();
+        setStreak(streakData);
+      }
+    } catch (error) {
+      console.error('Failed to load streak:', error);
+    }
+  };
+
+  const updateStreak = async () => {
+    try {
+      const response = await fetch('https://apiforspelling.somee.com/api/streak', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const streakData = await response.json();
+        setStreak(streakData);
+      }
+    } catch (error) {
+      console.error('Failed to update streak:', error);
+    }
+  };
+
   useEffect(() => {
     loadWords();
+    loadStreak();
   }, []);
 
   useEffect(() => {
@@ -298,6 +337,11 @@ function TypingPage({ themedStyles, theme }) {
       // Record practice result
       if (wordList[currentWordIndex]) {
         await storageService.recordPractice(wordList[currentWordIndex], isCorrect);
+        
+        // Update streak when practice is completed
+        if (typedWords.length + 1 === wordList.length) {
+          await updateStreak();
+        }
       }
     } else {
       setCurrentInput(val);
@@ -342,6 +386,25 @@ function TypingPage({ themedStyles, theme }) {
       <h2>
         Typing Practice {currentInput && <span style={{ color: 'gray' }}>&quot;{currentInput}&quot;</span>}
       </h2>
+      
+      {/* Streak Display */}
+      {streak && (
+        <div style={themedStyles.streakContainer}>
+          <div style={themedStyles.streakCard}>
+            <div style={themedStyles.streakCurrent}>
+              🔥 {streak.currentStreak} day{streak.currentStreak !== 1 ? 's' : ''}
+            </div>
+            <div style={themedStyles.streakLongest}>
+              Best: {streak.longestStreak} day{streak.longestStreak !== 1 ? 's' : ''}
+            </div>
+            {!streak.isStreakActive && (
+              <div style={themedStyles.streakWarning}>
+                ⚠️ Streak broken! Start practicing to build a new streak!
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       <div style={themedStyles.controlsContainer}>
         <button 
@@ -748,6 +811,38 @@ function getThemedStyles(theme) {
         transform: 'translateY(-1px)',
         boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.2)',
       },
+    },
+    // Streak styles
+    streakContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      marginBottom: '1rem',
+    },
+    streakCard: {
+      background: isDark ? 'linear-gradient(135deg, #ff6b6b, #ee5a24)' : 'linear-gradient(135deg, #ff7675, #e17055)',
+      color: '#fff',
+      padding: '1rem 1.5rem',
+      borderRadius: '12px',
+      boxShadow: isDark ? '0 4px 15px rgba(255, 107, 107, 0.3)' : '0 4px 15px rgba(255, 118, 117, 0.3)',
+      textAlign: 'center',
+      minWidth: '200px',
+    },
+    streakCurrent: {
+      fontSize: '1.5rem',
+      fontWeight: 'bold',
+      marginBottom: '0.5rem',
+    },
+    streakLongest: {
+      fontSize: '0.9rem',
+      opacity: 0.9,
+      marginBottom: '0.5rem',
+    },
+    streakWarning: {
+      fontSize: '0.8rem',
+      background: 'rgba(255, 255, 255, 0.2)',
+      padding: '0.3rem 0.6rem',
+      borderRadius: '6px',
+      marginTop: '0.5rem',
     },
     wordItem: {
       listStyle: 'none',

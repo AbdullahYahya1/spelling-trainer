@@ -55,6 +55,9 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# Publish folder (deployment artifacts)
+**/publish/
+
 # Visual Studio
 .vs/
 *.user
