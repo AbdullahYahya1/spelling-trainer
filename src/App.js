@@ -3,6 +3,7 @@ import { authService } from './services/authService';
 import { storageService } from './services/storageService';
 import Login from './components/Login';
 import Register from './components/Register';
+import PhonogramsPage from './components/PhonogramsPage';
 
 const shuffleArray = (arr) => {
   const shuffled = [...arr];
@@ -249,6 +250,17 @@ export default function App() {
           >
             Manage Words
           </a>
+          <a
+            href="#phonograms"
+            onClick={e => { e.preventDefault(); setPage('phonograms'); }}
+            style={{
+              ...themedStyles.navLink,
+              ...(page === 'phonograms' ? themedStyles.navLinkActive : {})
+            }}
+            aria-current={page === 'phonograms' ? 'page' : undefined}
+          >
+            Phonograms
+          </a>
           
           {isAuthenticated ? (
             <>
@@ -309,7 +321,13 @@ export default function App() {
           </button>
         </nav>
       </header>
-      {page === 'typing' ? <TypingPage themedStyles={themedStyles} theme={theme} streak={streak} updateStreak={updateStreak} /> : <WordManagerPage themedStyles={themedStyles} />}
+      {page === 'typing' ? (
+        <TypingPage themedStyles={themedStyles} theme={theme} streak={streak} updateStreak={updateStreak} />
+      ) : page === 'manage' ? (
+        <WordManagerPage themedStyles={themedStyles} />
+      ) : (
+        <PhonogramsPage themedStyles={themedStyles} theme={theme} />
+      )}
     </div>
   );
 }

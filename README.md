@@ -90,6 +90,39 @@ npm run build
 vercel --prod
 ```
 
+## 🎯 Features
+
+### 1. Typing Practice
+Practice spelling words with real-time feedback and streak tracking.
+
+### 2. Word Management
+Add, edit, and delete custom words with descriptions.
+
+### 3. Phonograms Practice (NEW!)
+Learn and practice phonogram patterns (word families) with a comprehensive, research-based approach:
+
+**📚 50+ Phonogram Patterns organized by complexity:**
+- **Basic Consonant Digraphs**: sh, ch, th, wh, ph, ck, ng, nk
+- **Basic Vowel Teams**: ai/ay, ee/ea, oa/oe, oo, oi/oy, ow/ou, au/aw, ew/ue/ui, ey
+- **R-Controlled Vowels**: ar, er, ir, or, ur, ear, eer, air, are
+- **After Short Vowels**: tch, dge
+- **Silent Letter Patterns**: kn, wr, gn, mb, gu, gh
+- **Complex Vowel Patterns**: igh, ight, ie, ei, eigh, ure, ould, ough
+- **Common Endings**: tion, sion, ture
+
+**✨ Features:**
+- Progressive learning from simple to complex patterns
+- 8+ example words for each sound variation
+- Clear explanations and pronunciation guides
+- Progress tracking (saves your position locally)
+- Previous/Next navigation through patterns
+- Auto-advance when completing a pattern
+- Visual progress indicator
+- Beautiful gradient cards showing pattern and sound
+- No backend required - all data stored locally
+
+**🎯 Based on proven phonics instruction methods including Orton-Gillingham approach**
+
 ## 🔧 Configuration
 
 ### API Configuration
@@ -101,7 +134,9 @@ vercel --prod
 ### Frontend Configuration
 - **API Endpoint**: `https://apiforspelling.somee.com`
 - **Theme**: Dark/Light mode support
-- **Storage**: Local storage with online sync
+- **Storage**: 
+  - Word practice: Local storage with online sync
+  - Phonograms: Local storage only (no backend needed)
 
 ## 📋 API Endpoints
 
