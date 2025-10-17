@@ -30,6 +30,7 @@ export default function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      updateStreak();
       loadStreak();
     }
   }, [isAuthenticated]);
@@ -403,10 +404,6 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
       
       if (wordList[currentWordIndex]) {
         await storageService.recordPractice(wordList[currentWordIndex], isCorrect);
-        
-        if (typedWords.length + 1 === wordList.length) {
-          await updateStreak();
-        }
       }
     } else {
       setCurrentInput(val);
