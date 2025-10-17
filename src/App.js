@@ -16,7 +16,7 @@ const shuffleArray = (arr) => {
 
 export default function App() {
   const [page, setPage] = useState('typing');
-  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [authPage, setAuthPage] = useState(''); // 'login' or 'register' or '' for none
