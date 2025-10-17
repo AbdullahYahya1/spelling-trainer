@@ -22,11 +22,9 @@ namespace SpellingTrainer.API.Models
         public int PracticeCount { get; set; } = 0;
         
         public int CorrectCount { get; set; } = 0;
-        
-        // Foreign key
+
         public int UserId { get; set; }
-        
-        // Navigation property
+
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
     }

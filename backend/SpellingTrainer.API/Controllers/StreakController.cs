@@ -32,7 +32,7 @@ namespace SpellingTrainer.API.Controllers
 
             if (streak == null)
             {
-                // Create new streak for user
+
                 streak = new Streak
                 {
                     UserId = userId.Value,
@@ -44,14 +44,13 @@ namespace SpellingTrainer.API.Controllers
                 await _context.SaveChangesAsync();
             }
 
-            // Check if streak should be reset (missed a day)
             var today = DateTime.UtcNow.Date;
             var lastPractice = streak.LastPracticeDate.Date;
             var daysDifference = (today - lastPractice).Days;
 
             if (daysDifference > 1)
             {
-                // Streak broken - reset to 0
+
                 streak.CurrentStreak = 0;
                 streak.LastPracticeDate = today;
                 await _context.SaveChangesAsync();
@@ -83,7 +82,7 @@ namespace SpellingTrainer.API.Controllers
 
             if (streak == null)
             {
-                // Create new streak for user
+
                 streak = new Streak
                 {
                     UserId = userId.Value,
@@ -101,7 +100,7 @@ namespace SpellingTrainer.API.Controllers
 
                 if (daysDifference == 0)
                 {
-                    // Already practiced today
+
                     return Ok(new StreakResponse
                     {
                         CurrentStreak = streak.CurrentStreak,
@@ -113,11 +112,10 @@ namespace SpellingTrainer.API.Controllers
                 }
                 else if (daysDifference == 1)
                 {
-                    // Consecutive day - increment streak
+
                     streak.CurrentStreak++;
                     streak.LastPracticeDate = today;
-                    
-                    // Update longest streak if needed
+
                     if (streak.CurrentStreak > streak.LongestStreak)
                     {
                         streak.LongestStreak = streak.CurrentStreak;
@@ -125,7 +123,7 @@ namespace SpellingTrainer.API.Controllers
                 }
                 else
                 {
-                    // Streak broken - reset to 1
+
                     streak.CurrentStreak = 1;
                     streak.LastPracticeDate = today;
                 }

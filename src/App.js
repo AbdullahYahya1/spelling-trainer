@@ -19,7 +19,7 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [authPage, setAuthPage] = useState(''); // 'login' or 'register' or '' for none
+  const [authPage, setAuthPage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [streak, setStreak] = useState(null);
 
@@ -28,7 +28,6 @@ export default function App() {
     document.body.style.background = theme === 'dark' ? '#181a1b' : '#f7f7fa';
   }, [theme]);
 
-  // Load streak when user is authenticated
   useEffect(() => {
     if (isAuthenticated) {
       loadStreak();
@@ -36,7 +35,6 @@ export default function App() {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    // Check if user is authenticated on app load
     const checkAuth = async () => {
       const hasToken = authService.isAuthenticated();
       
@@ -48,19 +46,16 @@ export default function App() {
           setUser(authService.getCurrentUser());
           storageService.setOnlineMode(true);
         } else {
-          // Token is invalid or expired
           authService.logout();
           storageService.setOnlineMode(false);
-          setAuthPage('login'); // Show login page if token is invalid
+          setAuthPage('login');
           
-          // Show a brief message if token was expired
           if (result.expired) {
-            // Session expired, user will be redirected to login
           }
         }
       } else {
         storageService.setOnlineMode(false);
-        setAuthPage('login'); // Show login page if no token
+        setAuthPage('login');
       }
       setIsLoading(false);
     };
@@ -68,16 +63,13 @@ export default function App() {
     checkAuth();
   }, []);
 
-  // Periodic token expiration check
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const checkTokenExpiration = () => {
       if (authService.isAuthenticated()) {
-        // Token is still valid
         return;
       } else {
-        // Token has expired, logout user
         authService.logout();
         setIsAuthenticated(false);
         setUser(null);
@@ -86,7 +78,6 @@ export default function App() {
       }
     };
 
-    // Check every 5 minutes
     const interval = setInterval(checkTokenExpiration, 5 * 60 * 1000);
 
     return () => clearInterval(interval);
@@ -99,13 +90,10 @@ export default function App() {
     setUser(authService.getCurrentUser());
     storageService.setOnlineMode(true);
     
-    // Sync local words to online storage
     const syncResult = await storageService.syncLocalToOnline();
     if (syncResult.success && syncResult.synced > 0) {
-      // Words synced to online storage
     }
     
-    // Redirect to main app
     setAuthPage('');
   };
 
@@ -114,13 +102,10 @@ export default function App() {
     setUser(authService.getCurrentUser());
     storageService.setOnlineMode(true);
     
-    // Sync local words to online storage
     const syncResult = await storageService.syncLocalToOnline();
     if (syncResult.success && syncResult.synced > 0) {
-      // Words synced to online storage
     }
     
-    // Redirect to main app
     setAuthPage('');
   };
 
@@ -183,7 +168,6 @@ export default function App() {
     );
   }
 
-  // Show authentication pages only if user is trying to authenticate and not already authenticated
   if ((authPage === 'login' || authPage === 'register') && !isAuthenticated) {
     return (
       <div style={themedStyles.appWrapper}>
@@ -275,7 +259,6 @@ export default function App() {
                 </button>
               </div>
               
-              {/* Streak Display in Header */}
               <div style={themedStyles.headerStreak}>
                 {streak ? (
                   <div style={themedStyles.headerStreakContent}>
@@ -345,7 +328,6 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
     setIsLoading(true);
     try {
       const words = await storageService.getWords();
-      // Extract just the text for typing practice
       const wordTexts = words.map(word => typeof word === 'string' ? word : word.text);
       setWordList(shuffleArray(wordTexts));
     } catch (error) {
@@ -363,10 +345,49 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
     inputRef.current?.focus();
   }, [typedWords, wordList]);
 
+  const speakWord = useCallback((word) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(voice => voice.lang.startsWith('en-'));
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Sorry, your browser does not support text-to-speech.');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        const currentWord = wordList[typedWords.length];
+        if (currentWord) {
+          speakWord(currentWord);
+        }
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setShowList(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [wordList, typedWords, speakWord]);
+
   const handleInputChange = async (e) => {
     const val = e.target.value;
     
-    // Track if user has started typing
     if (val.length > 0 && !hasStartedTyping) {
       setHasStartedTyping(true);
     }
@@ -378,13 +399,11 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
       
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
-      setHasStartedTyping(false); // Reset for next word
+      setHasStartedTyping(false);
       
-      // Record practice result
       if (wordList[currentWordIndex]) {
         await storageService.recordPractice(wordList[currentWordIndex], isCorrect);
         
-        // Update streak when practice is completed
         if (typedWords.length + 1 === wordList.length) {
           await updateStreak();
         }
@@ -402,6 +421,9 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
     inputRef.current?.focus();
   };
 
+  const getCurrentWord = () => {
+    return wordList[typedWords.length];
+  };
 
   const getWordStatus = (word, i) => {
     const typed = typedWords[i];
@@ -436,21 +458,43 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
       
       <div style={themedStyles.controlsContainer}>
         <button 
-          onClick={() => setShowList(!showList)} 
+          onClick={(e) => {
+            e.stopPropagation();
+            const currentWord = getCurrentWord();
+            if (currentWord) speakWord(currentWord);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+          style={{
+            ...themedStyles.showListBtn,
+            background: theme === 'dark' ? '#9b59b6' : '#8e44ad',
+            color: '#fff'
+          }}
+          disabled={!getCurrentWord()}
+          title="Press Ctrl+C to hear the word"
+        >
+          🔊 Hear Word (Ctrl+C)
+        </button>
+        
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowList(!showList);
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
           style={{
             ...themedStyles.showListBtn,
             background: showList ? (theme === 'dark' ? '#27ae60' : '#4CAF50') : (theme === 'dark' ? '#444' : '#ccc'),
             color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#222')
           }}
+          title="Press Ctrl+L to toggle"
         >
-          {showList ? '👁️ Hide List' : '👁️ Show List'}
+          {showList ? '👁️ Hide List (Ctrl+L)' : '👁️ Show List (Ctrl+L)'}
         </button>
       </div>
       
       <div style={themedStyles.wordContainer}>
         {wordList.map((word, i) => {
           if (i === typedWords.length) {
-            // Hide current word if showList is enabled and student has started typing
             const shouldHideCurrentWord = showList && hasStartedTyping && currentInput.length > 0;
             
             return (
@@ -509,7 +553,13 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
         aria-label="Type the word here"
         tabIndex={0}
       />
-      <button onClick={resetTest} style={themedStyles.redoBtn}>
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          resetTest();
+        }} 
+        style={themedStyles.redoBtn}
+      >
         Redo Test
       </button>
     </div>
@@ -545,8 +595,7 @@ function WordManagerPage({ themedStyles }) {
   const addWord = async () => {
     const word = newWord.trim();
     if (!word) return;
-    
-    // Check for spaces
+
     if (word.includes(' ')) {
       setError('Word cannot contain spaces');
       return;
@@ -593,7 +642,7 @@ function WordManagerPage({ themedStyles }) {
     <div style={themedStyles.page}>
       <h2 style={themedStyles.manageTitle}>Manage Words</h2>
       
-      {/* Storage mode indicator */}
+      {}
       <div style={themedStyles.storageIndicator}>
         {storageService.isOnline ? (
           <span style={themedStyles.onlineIndicator}>
@@ -606,7 +655,7 @@ function WordManagerPage({ themedStyles }) {
         )}
       </div>
       
-      {/* Search bar */}
+      {}
       <div style={themedStyles.searchContainer}>
         <input
           type="text"
@@ -629,7 +678,7 @@ function WordManagerPage({ themedStyles }) {
             type="text"
             value={newWord}
             onChange={(e) => {
-              // Remove spaces from input
+
               const value = e.target.value.replace(/\s/g, '');
               setNewWord(value);
             }}
@@ -637,7 +686,7 @@ function WordManagerPage({ themedStyles }) {
               if (e.key === 'Enter') {
                 addWord();
               } else if (e.key === ' ') {
-                // Prevent space key from being typed
+
                 e.preventDefault();
               }
             }}
@@ -840,7 +889,7 @@ function getThemedStyles(theme) {
         boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.2)',
       },
     },
-    // Streak styles
+
     streakContainer: {
       display: 'flex',
       justifyContent: 'center',
@@ -990,7 +1039,7 @@ function getThemedStyles(theme) {
       fontSize: '1.1rem',
       color: isDark ? '#f7f7fa' : '#222',
     },
-    // Storage indicator styles
+
     storageIndicator: {
       textAlign: 'center',
       marginBottom: '1rem',
@@ -1015,7 +1064,7 @@ function getThemedStyles(theme) {
       fontWeight: 600,
       border: isDark ? '1px solid #3498db' : '1px solid #2980b9',
     },
-    // Search styles
+
     searchContainer: {
       marginBottom: '1.5rem',
       textAlign: 'center',
@@ -1036,7 +1085,7 @@ function getThemedStyles(theme) {
         boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(52, 152, 219, 0.1)',
       },
     },
-    // Add word container styles
+
     addWordContainer: {
       marginBottom: '1.5rem',
     },
@@ -1058,7 +1107,7 @@ function getThemedStyles(theme) {
       transition: 'all 0.3s ease',
       fontStyle: 'italic',
     },
-    // Word content styles
+
     wordContent: {
       display: 'flex',
       flexDirection: 'column',
@@ -1071,7 +1120,7 @@ function getThemedStyles(theme) {
       fontStyle: 'italic',
       marginTop: '0.2rem',
     },
-    // Authentication styles
+
     authForm: {
       maxWidth: '400px',
       margin: '0 auto',
@@ -1125,7 +1174,7 @@ function getThemedStyles(theme) {
       marginBottom: '1rem',
       border: isDark ? '1px solid #e74c3c' : '1px solid #f44336',
     },
-    // User info styles
+
     userInfo: {
       display: 'flex',
       alignItems: 'center',
@@ -1136,7 +1185,7 @@ function getThemedStyles(theme) {
       backdropFilter: 'blur(10px)',
       border: '1px solid rgba(255, 255, 255, 0.2)',
     },
-    // Authentication buttons in header
+
     authButtons: {
       display: 'flex',
       alignItems: 'center',
@@ -1187,7 +1236,7 @@ function getThemedStyles(theme) {
         boxShadow: '0 4px 12px rgba(231, 76, 60, 0.3)',
       },
     },
-    // Header streak styles
+
     headerStreak: {
       display: 'flex',
       alignItems: 'center',

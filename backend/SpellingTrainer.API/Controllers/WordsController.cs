@@ -34,7 +34,6 @@ namespace SpellingTrainer.API.Controllers
 
             var query = _context.Words.Where(w => w.UserId == userId);
 
-            // Add search functionality
             if (!string.IsNullOrEmpty(search))
             {
                 search = search.ToLower();
@@ -70,19 +69,16 @@ namespace SpellingTrainer.API.Controllers
                 return Unauthorized();
             }
 
-            // Validate model state
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            // Additional validation for spaces
             if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Contains(' '))
             {
                 return BadRequest("Word cannot contain spaces or be empty");
             }
 
-            // Check if word already exists for this user
             var existingWord = await _context.Words
                 .FirstOrDefaultAsync(w => w.UserId == userId && w.Text.ToLower() == request.Text.ToLower());
 
@@ -156,13 +152,11 @@ namespace SpellingTrainer.API.Controllers
                 return Unauthorized();
             }
 
-            // Validate model state
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            // Additional validation for spaces
             if (string.IsNullOrWhiteSpace(request.Text) || request.Text.Contains(' '))
             {
                 return BadRequest("Word cannot contain spaces or be empty");
@@ -176,7 +170,6 @@ namespace SpellingTrainer.API.Controllers
                 return NotFound();
             }
 
-            // Check if new word text already exists for this user
             var existingWord = await _context.Words
                 .FirstOrDefaultAsync(w => w.UserId == userId && w.Text.ToLower() == request.Text.ToLower() && w.Id != id);
 

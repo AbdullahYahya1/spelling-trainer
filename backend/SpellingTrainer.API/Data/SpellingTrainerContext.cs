@@ -17,7 +17,6 @@ namespace SpellingTrainer.API.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure User entity
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -29,7 +28,6 @@ namespace SpellingTrainer.API.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             });
 
-            // Configure Word entity
             modelBuilder.Entity<Word>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -37,15 +35,13 @@ namespace SpellingTrainer.API.Data
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.PracticeCount).HasDefaultValue(0);
                 entity.Property(e => e.CorrectCount).HasDefaultValue(0);
-                
-                // Configure relationship
+
                 entity.HasOne(e => e.User)
                       .WithMany(e => e.Words)
                       .HasForeignKey(e => e.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            // Configure Streak entity
             modelBuilder.Entity<Streak>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -53,8 +49,7 @@ namespace SpellingTrainer.API.Data
                 entity.Property(e => e.LongestStreak).HasDefaultValue(0);
                 entity.Property(e => e.LastPracticeDate).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                
-                // Configure relationship
+
                 entity.HasOne(e => e.User)
                       .WithMany()
                       .HasForeignKey(e => e.UserId)

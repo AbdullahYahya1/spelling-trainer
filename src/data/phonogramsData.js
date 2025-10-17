@@ -1,6 +1,6 @@
 export const phonogramsData = {
   "phonograms": [
-    // BASIC CONSONANT DIGRAPHS (Simple patterns to start)
+
     {
       "pattern": "sh",
       "sounds": [
@@ -97,7 +97,6 @@ export const phonogramsData = {
       ]
     },
 
-    // BASIC VOWEL TEAMS (Common vowel pairs)
     {
       "pattern": "ai",
       "sounds": [
@@ -314,7 +313,6 @@ export const phonogramsData = {
       ]
     },
 
-    // R-CONTROLLED VOWELS (Important pattern group)
     {
       "pattern": "ar",
       "sounds": [
@@ -417,7 +415,6 @@ export const phonogramsData = {
       ]
     },
 
-    // AFTER SHORT VOWELS (tch, dge)
     {
       "pattern": "tch",
       "sounds": [
@@ -439,7 +436,6 @@ export const phonogramsData = {
       ]
     },
 
-    // SILENT LETTER PATTERNS (Important but tricky)
     {
       "pattern": "kn",
       "sounds": [
@@ -506,7 +502,6 @@ export const phonogramsData = {
       ]
     },
 
-    // COMPLEX I PATTERNS
     {
       "pattern": "igh",
       "sounds": [
@@ -574,7 +569,6 @@ export const phonogramsData = {
       ]
     },
 
-    // COMPLEX U PATTERNS
     {
       "pattern": "ure",
       "sounds": [
@@ -596,7 +590,6 @@ export const phonogramsData = {
       ]
     },
 
-    // COMPLEX OUGH PATTERN (Most challenging!)
     {
       "pattern": "ough",
       "sounds": [
@@ -639,7 +632,6 @@ export const phonogramsData = {
       "notes": "This is one of the most confusing patterns in English because it has at least 7 different sounds! Mastering this shows advanced spelling skills."
     },
 
-    // COMMON ENDINGS (Important for multisyllabic words)
     {
       "pattern": "tion",
       "sounds": [

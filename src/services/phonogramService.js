@@ -1,9 +1,9 @@
-// Service to manage phonogram progress in localStorage
+
 
 const STORAGE_KEY = 'phonogram_progress';
 
 export const phonogramService = {
-  // Get current progress
+
   getProgress: () => {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
@@ -17,7 +17,6 @@ export const phonogramService = {
     }
   },
 
-  // Save progress
   saveProgress: (patternIndex, soundIndex, exampleIndex) => {
     try {
       const progress = { patternIndex, soundIndex, exampleIndex };
@@ -29,7 +28,6 @@ export const phonogramService = {
     }
   },
 
-  // Reset progress
   resetProgress: () => {
     try {
       localStorage.removeItem(STORAGE_KEY);

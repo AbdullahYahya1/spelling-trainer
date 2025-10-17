@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { phonogramsData } from '../data/phonogramsData';
 import { phonogramService } from '../services/phonogramService';
 
@@ -24,13 +24,11 @@ export default function PhonogramsPage({ themedStyles, theme }) {
   const currentPhonogram = phonograms[progress.patternIndex];
   const currentSound = currentPhonogram?.sounds[progress.soundIndex];
 
-  // Load progress and initialize words
   useEffect(() => {
     const savedProgress = phonogramService.getProgress();
     setProgress(savedProgress);
   }, []);
 
-  // Generate words for current sound
   useEffect(() => {
     if (currentSound) {
       setCurrentWords(shuffleArray([...currentSound.examples]));
@@ -43,6 +41,49 @@ export default function PhonogramsPage({ themedStyles, theme }) {
   useEffect(() => {
     inputRef.current?.focus();
   }, [typedWords, currentWords]);
+
+  const speakWord = useCallback((word) => {
+    if ('speechSynthesis' in window) {
+
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.rate = 0.8; // Slightly slower for clarity
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(voice => voice.lang.startsWith('en-'));
+      if (englishVoice) {
+        utterance.voice = englishVoice;
+      }
+      
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert('Sorry, your browser does not support text-to-speech.');
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+
+      if (e.ctrlKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        const currentWord = currentWords[typedWords.length];
+        if (currentWord) {
+          speakWord(currentWord);
+        }
+      }
+
+      if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setShowList(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentWords, typedWords, speakWord]);
 
   const handleInputChange = (e) => {
     const val = e.target.value;
@@ -57,10 +98,9 @@ export default function PhonogramsPage({ themedStyles, theme }) {
       setTypedWords([...typedWords, word]);
       setCurrentInput('');
       setHasStartedTyping(false);
-      
-      // Check if this was the last word
+
       if (typedWords.length + 1 === currentWords.length) {
-        // Move to next sound or pattern after a short delay
+
         setTimeout(() => {
           moveToNext();
         }, 500);
@@ -74,7 +114,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
     const nextSoundIndex = progress.soundIndex + 1;
     
     if (nextSoundIndex < currentPhonogram.sounds.length) {
-      // Move to next sound in current pattern
+
       const newProgress = {
         patternIndex: progress.patternIndex,
         soundIndex: nextSoundIndex,
@@ -83,7 +123,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
       setProgress(newProgress);
       phonogramService.saveProgress(newProgress.patternIndex, newProgress.soundIndex, newProgress.exampleIndex);
     } else {
-      // Move to next pattern
+
       const nextPatternIndex = progress.patternIndex + 1;
       
       if (nextPatternIndex < phonograms.length) {
@@ -95,7 +135,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
         setProgress(newProgress);
         phonogramService.saveProgress(newProgress.patternIndex, newProgress.soundIndex, newProgress.exampleIndex);
       } else {
-        // Completed all patterns
+
         const newProgress = {
           patternIndex: 0,
           soundIndex: 0,
@@ -111,7 +151,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
     const prevSoundIndex = progress.soundIndex - 1;
     
     if (prevSoundIndex >= 0) {
-      // Move to previous sound in current pattern
+
       const newProgress = {
         patternIndex: progress.patternIndex,
         soundIndex: prevSoundIndex,
@@ -120,7 +160,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
       setProgress(newProgress);
       phonogramService.saveProgress(newProgress.patternIndex, newProgress.soundIndex, newProgress.exampleIndex);
     } else {
-      // Move to previous pattern
+
       const prevPatternIndex = progress.patternIndex - 1;
       
       if (prevPatternIndex >= 0) {
@@ -153,6 +193,10 @@ export default function PhonogramsPage({ themedStyles, theme }) {
     inputRef.current?.focus();
   };
 
+  const getCurrentWord = () => {
+    return currentWords[typedWords.length];
+  };
+
   const getWordStatus = (word, i) => {
     const typed = typedWords[i];
     if (!typed) return 'pending';
@@ -174,7 +218,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
         📚 Phonogram Practice
       </h2>
       
-      {/* Progress Indicator */}
+      {}
       <div style={phonogramStyles.progressContainer}>
         <div style={phonogramStyles.progressText(theme)}>
           Pattern {progress.patternIndex + 1} of {phonograms.length} • 
@@ -190,7 +234,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
         </div>
       </div>
 
-      {/* Pattern Card */}
+      {}
       <div style={phonogramStyles.patternCard(theme)}>
         <div style={phonogramStyles.patternHeader}>
           <span style={phonogramStyles.patternBadge(theme)}>{currentPhonogram.pattern}</span>
@@ -204,10 +248,15 @@ export default function PhonogramsPage({ themedStyles, theme }) {
         )}
       </div>
 
-      {/* Controls */}
+      {}
       <div style={themedStyles.controlsContainer}>
         <button 
-          onClick={moveToPrevious}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveToPrevious();
+
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
           disabled={progress.patternIndex === 0 && progress.soundIndex === 0}
           style={{
             ...phonogramStyles.navButton(theme),
@@ -219,25 +268,55 @@ export default function PhonogramsPage({ themedStyles, theme }) {
         </button>
         
         <button 
-          onClick={() => setShowList(!showList)} 
+          onClick={(e) => {
+            e.stopPropagation();
+            const currentWord = getCurrentWord();
+            if (currentWord) speakWord(currentWord);
+
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
+          style={{
+            ...themedStyles.showListBtn,
+            background: theme === 'dark' ? '#9b59b6' : '#8e44ad',
+            color: '#fff'
+          }}
+          disabled={!getCurrentWord()}
+          title="Press Ctrl+C to hear the word"
+        >
+          🔊 Hear Word (Ctrl+C)
+        </button>
+        
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowList(!showList);
+
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
           style={{
             ...themedStyles.showListBtn,
             background: showList ? (theme === 'dark' ? '#27ae60' : '#4CAF50') : (theme === 'dark' ? '#444' : '#ccc'),
             color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#222')
           }}
+          title="Press Ctrl+L to toggle"
         >
-          {showList ? '👁️ Hide List' : '👁️ Show List'}
+          {showList ? '👁️ Hide List (Ctrl+L)' : '👁️ Show List (Ctrl+L)'}
         </button>
 
         <button 
-          onClick={moveToNext}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveToNext();
+
+            setTimeout(() => inputRef.current?.focus(), 0);
+          }}
           style={phonogramStyles.navButton(theme)}
         >
           Next →
         </button>
       </div>
 
-      {/* Typing Area */}
+      {}
       <h3 style={phonogramStyles.instructionText}>
         Type these words: {currentInput && <span style={{ color: 'gray' }}>&quot;{currentInput}&quot;</span>}
       </h3>
@@ -306,11 +385,20 @@ export default function PhonogramsPage({ themedStyles, theme }) {
       />
 
       <div style={phonogramStyles.buttonContainer}>
-        <button onClick={resetCurrentTest} style={{...themedStyles.redoBtn, marginRight: '1rem'}}>
+        <button 
+          onClick={(e) => {
+            e.stopPropagation();
+            resetCurrentTest();
+          }} 
+          style={{...themedStyles.redoBtn, marginRight: '1rem'}}
+        >
           Redo Current Test
         </button>
         <button 
-          onClick={resetProgress} 
+          onClick={(e) => {
+            e.stopPropagation();
+            resetProgress();
+          }} 
           style={{
             ...themedStyles.redoBtn,
             background: theme === 'dark' ? '#c0392b' : '#e74c3c'

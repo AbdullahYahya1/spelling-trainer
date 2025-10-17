@@ -24,19 +24,17 @@ namespace SpellingTrainer.API.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<AuthResponse>> Register(RegisterRequest request)
         {
-            // Check if username already exists
+
             if (await _context.Users.AnyAsync(u => u.Username == request.Username))
             {
                 return BadRequest("Username already exists");
             }
 
-            // Check if email already exists
             if (await _context.Users.AnyAsync(u => u.Email == request.Email))
             {
                 return BadRequest("Email already exists");
             }
 
-            // Create new user
             var user = new User
             {
                 Username = request.Username,
@@ -48,7 +46,6 @@ namespace SpellingTrainer.API.Controllers
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            // Generate token
             var token = _jwtService.GenerateToken(user);
 
             return Ok(new AuthResponse
@@ -70,11 +67,9 @@ namespace SpellingTrainer.API.Controllers
                 return Unauthorized("Invalid username or password");
             }
 
-            // Update last login
             user.LastLoginAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
-            // Generate token
             var token = _jwtService.GenerateToken(user);
 
             return Ok(new AuthResponse

@@ -20,8 +20,7 @@ namespace SpellingTrainer.API.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         
         public DateTime? LastLoginAt { get; set; }
-        
-        // Navigation property
+
         public virtual ICollection<Word> Words { get; set; } = new List<Word>();
     }
 }

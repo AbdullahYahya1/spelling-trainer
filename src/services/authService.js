@@ -1,12 +1,11 @@
 import api from './api';
 
 export const authService = {
-  // Helper function to decode JWT token and check expiration
+
   isTokenExpired(token) {
     try {
       if (!token) return true;
-      
-      // Decode JWT token (without verification since we're just checking expiration)
+
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
@@ -23,7 +22,6 @@ export const authService = {
     }
   },
 
-  // Helper function to clean up expired tokens
   cleanupExpiredToken() {
     const token = localStorage.getItem('authToken');
     if (token && this.isTokenExpired(token)) {
@@ -38,8 +36,7 @@ export const authService = {
     try {
       const response = await api.post('/auth/login', { username, password });
       const { token, username: userUsername, email } = response.data;
-      
-      // Store token and user info
+
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify({ username: userUsername, email }));
       
@@ -56,8 +53,7 @@ export const authService = {
     try {
       const response = await api.post('/auth/register', { username, email, password });
       const { token, username: userUsername, email: userEmail } = response.data;
-      
-      // Store token and user info
+
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify({ username: userUsername, email: userEmail }));
       
@@ -74,8 +70,7 @@ export const authService = {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) return { success: false };
-      
-      // Check if token is expired locally first
+
       if (this.isTokenExpired(token)) {
         console.log('Token is expired, cleaning up...');
         this.logout();
@@ -89,7 +84,7 @@ export const authService = {
       });
       return { success: true, data: response.data };
     } catch (error) {
-      // If server says token is invalid, clean it up
+
       if (error.response?.status === 401) {
         console.log('Server says token is invalid, cleaning up...');
         this.logout();
@@ -107,8 +102,7 @@ export const authService = {
   isAuthenticated() {
     const token = localStorage.getItem('authToken');
     if (!token) return false;
-    
-    // Check if token is expired
+
     if (this.isTokenExpired(token)) {
       console.log('Token is expired, cleaning up...');
       this.logout();
