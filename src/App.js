@@ -25,8 +25,12 @@ export default function App() {
 
   useEffect(() => {
     localStorage.setItem('theme', theme);
-    document.body.style.background = theme === 'dark' ? '#181a1b' : '#f7f7fa';
+    document.body.style.background = theme === 'dark' ? '#181a1b' : '#f5f7fa';
   }, [theme]);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [page]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -173,21 +177,21 @@ export default function App() {
     return (
       <div style={themedStyles.appWrapper}>
         <header style={themedStyles.header}>
-          <h1 style={themedStyles.title}>📝 Spelling Practice</h1>
+          <h1 style={themedStyles.title}>Spelling Trainer</h1>
           <div style={themedStyles.nav}>
             <button
               onClick={() => setAuthPage('')}
               style={themedStyles.themeToggleBtn}
               aria-label="Back to app"
             >
-              ← Back to App
+              Back
             </button>
             <button
               onClick={toggleTheme}
               style={themedStyles.themeToggleBtn}
               aria-label="Toggle dark/light mode"
             >
-              {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+              {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
         </header>
@@ -211,7 +215,7 @@ export default function App() {
   return (
     <div style={themedStyles.appWrapper}>
       <header style={themedStyles.header}>
-        <h1 style={themedStyles.title}>📝 Spelling Practice</h1>
+        <h1 style={themedStyles.title}>Spelling Trainer</h1>
         <nav style={themedStyles.nav}>
           <a
             href="#typing"
@@ -250,14 +254,7 @@ export default function App() {
           {isAuthenticated ? (
             <>
               <div style={themedStyles.userInfo}>
-                <span style={themedStyles.userName}>👤 {user?.username}</span>
-                <button
-                  onClick={handleLogout}
-                  style={themedStyles.logoutBtn}
-                  aria-label="Logout"
-                >
-                  Logout
-                </button>
+                <span style={themedStyles.userName}>{user?.username}</span>
               </div>
               
               <div style={themedStyles.headerStreak}>
@@ -300,9 +297,20 @@ export default function App() {
             onClick={toggleTheme}
             style={themedStyles.themeToggleBtn}
             aria-label="Toggle dark/light mode"
+            title={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
           >
-            {theme === 'light' ? '🌙 Dark' : '☀️ Light'}
+            {theme === 'light' ? '🌙' : '☀️'}
           </button>
+          
+          {isAuthenticated && (
+            <button
+              onClick={handleLogout}
+              style={themedStyles.logoutBtn}
+              aria-label="Logout"
+            >
+              Logout
+            </button>
+          )}
         </nav>
       </header>
       {page === 'typing' ? (
@@ -570,12 +578,15 @@ function WordManagerPage({ themedStyles }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [wordToDelete, setWordToDelete] = useState(null);
 
   const loadWords = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
-      const wordsList = await storageService.getWords(searchTerm);
+      const wordsList = await storageService.getWords('');
       setWords(wordsList);
     } catch (error) {
       console.error('Failed to load words:', error);
@@ -583,16 +594,22 @@ function WordManagerPage({ themedStyles }) {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm]);
+  }, []);
 
   useEffect(() => {
     loadWords();
-  }, [searchTerm, loadWords]);
+  }, [loadWords]);
+
+  const filteredWords = words.filter(word => {
+    const search = searchTerm.toLowerCase();
+    return word.text.toLowerCase().includes(search) || 
+           (word.description && word.description.toLowerCase().includes(search));
+  });
 
   const addWord = async () => {
     const word = newWord.trim();
     if (!word) return;
-
+    
     if (word.includes(' ')) {
       setError('Word cannot contain spaces');
       return;
@@ -610,20 +627,35 @@ function WordManagerPage({ themedStyles }) {
       setWords([...words, { text: word, description: newDescription.trim() }]);
       setNewWord('');
       setNewDescription('');
+      setShowAddModal(false);
     } else {
       setError(result.error || 'Failed to add word');
     }
   };
 
-  const removeWord = async (wordToRemove) => {
+  const handleDeleteClick = (word) => {
+    setWordToDelete(word);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!wordToDelete) return;
+    
     setError('');
-    const result = await storageService.removeWord(wordToRemove);
+    const result = await storageService.removeWord(wordToDelete);
     
     if (result.success) {
-      setWords(words.filter((w) => w.text !== wordToRemove));
+      setWords(words.filter((w) => w.text !== wordToDelete));
+      setShowDeleteModal(false);
+      setWordToDelete(null);
     } else {
       setError(result.error || 'Failed to remove word');
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setWordToDelete(null);
   };
 
   if (isLoading) {
@@ -637,30 +669,87 @@ function WordManagerPage({ themedStyles }) {
 
   return (
     <div style={themedStyles.page}>
-      <h2 style={themedStyles.manageTitle}>Manage Words</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <div>
+          <h2 style={themedStyles.manageTitle}>Manage Your Words</h2>
+          <p style={themedStyles.manageSubtitle}>
+            Search and organize your spelling practice words
+          </p>
+        </div>
+        <button 
+          onClick={() => setShowAddModal(true)} 
+          style={themedStyles.addWordButton}
+        >
+          + Add Word
+        </button>
+      </div>
       
-      {}
       <div style={themedStyles.storageIndicator}>
         {storageService.isOnline ? (
           <span style={themedStyles.onlineIndicator}>
-            🌐 Online Storage (Synced)
+            Online Storage
           </span>
         ) : (
           <span style={themedStyles.localIndicator}>
-            💾 Local Storage Only
+            Local Storage
           </span>
         )}
       </div>
       
-      {}
       <div style={themedStyles.searchContainer}>
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="🔍 Search words or descriptions..."
+          placeholder="Search words..."
           style={themedStyles.searchInput}
         />
+      </div>
+      
+      {filteredWords.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: themedStyles.wordDescription.color }}>
+          <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+            No words found
+          </p>
+          <p style={{ fontSize: '0.9rem' }}>
+            {searchTerm ? 'Try a different search term' : 'Add your first word to get started'}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem', color: themedStyles.wordDescription.color }}>
+            {filteredWords.length} word{filteredWords.length !== 1 ? 's' : ''} {searchTerm ? 'found' : 'total'}
+          </div>
+          <ul style={themedStyles.manageList}>
+            {filteredWords.map((word, i) => (
+              <li key={i} style={themedStyles.manageListItem}>
+                <div style={themedStyles.wordContent}>
+                  <div style={themedStyles.manageWord}>{word.text}</div>
+                  {word.description && (
+                    <div style={themedStyles.wordDescription}>{word.description}</div>
+                  )}
+                </div>
+                <button onClick={() => handleDeleteClick(word.text)} style={themedStyles.removeBtn} aria-label={`Remove ${word.text}`}>
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      
+      {showAddModal && (
+        <div style={themedStyles.modalOverlay} onClick={() => setShowAddModal(false)}>
+          <div style={themedStyles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={themedStyles.modalHeader}>
+              <h3 style={themedStyles.modalTitle}>Add New Word</h3>
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                style={themedStyles.modalCloseBtn}
+                aria-label="Close modal"
+              >
+                ✕
+              </button>
       </div>
       
       {error && (
@@ -669,64 +758,112 @@ function WordManagerPage({ themedStyles }) {
         </div>
       )}
       
-      <div style={themedStyles.addWordContainer}>
-        <div style={themedStyles.manageInputRow}>
+            <div style={themedStyles.modalBody}>
+              <div style={themedStyles.modalFormGroup}>
+                <label style={themedStyles.modalLabel}>Word</label>
           <input
             type="text"
             value={newWord}
-            onChange={(e) => {
-
-              const value = e.target.value.replace(/\s/g, '');
-              setNewWord(value);
-            }}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                addWord();
-              } else if (e.key === ' ') {
-
+                  onChange={(e) => setNewWord(e.target.value)}
+                  placeholder="Enter word"
+                  style={themedStyles.modalInput}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
+                      addWord();
+                    }
+                    if (e.key === 'Escape') {
+                      setShowAddModal(false);
               }
             }}
-            placeholder="Enter a new word (no spaces allowed)"
-            style={themedStyles.manageInput}
-            aria-label="Enter a new word"
           />
-          <button onClick={addWord} style={themedStyles.addBtn}>
-            Add
-          </button>
         </div>
         
-        <div style={themedStyles.descriptionRow}>
+              <div style={themedStyles.modalFormGroup}>
+                <label style={themedStyles.modalLabel}>Description (Optional)</label>
           <input
             type="text"
             value={newDescription}
             onChange={(e) => setNewDescription(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && addWord()}
-            placeholder="Optional: Add description/meaning (e.g., 'a type of fruit')"
-            style={themedStyles.descriptionInput}
-            aria-label="Enter word description"
-          />
-        </div>
+                  placeholder="Add a description or hint"
+                  style={themedStyles.modalInput}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      addWord();
+                    }
+                    if (e.key === 'Escape') {
+                      setShowAddModal(false);
+                    }
+                  }}
+                />
       </div>
       
-      {words.length === 0 ? (
-        <p>No words added yet.</p>
-      ) : (
-        <ul style={themedStyles.manageList}>
-          {words.map((word, i) => (
-            <li key={i} style={themedStyles.manageListItem}>
-              <div style={themedStyles.wordContent}>
-                <span style={themedStyles.manageWord}>{word.text}</span>
-                {word.description && (
-                  <span style={themedStyles.wordDescription}>{word.description}</span>
-                )}
+              <div style={themedStyles.modalActions}>
+                <button 
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setNewWord('');
+                    setNewDescription('');
+                    setError('');
+                  }} 
+                  style={themedStyles.modalCancelBtn}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={addWord} 
+                  style={themedStyles.modalAddBtn}
+                  disabled={!newWord.trim()}
+                >
+                  Add Word
+                </button>
               </div>
-              <button onClick={() => removeWord(word.text)} style={themedStyles.removeBtn} aria-label={`Remove ${word.text}`}>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {showDeleteModal && (
+        <div style={themedStyles.modalOverlay} onClick={cancelDelete}>
+          <div style={themedStyles.confirmModalContent} onClick={(e) => e.stopPropagation()}>
+            <div style={themedStyles.modalHeader}>
+              <h3 style={themedStyles.modalTitle}>Delete Word?</h3>
+              <button 
+                onClick={cancelDelete} 
+                style={themedStyles.modalCloseBtn}
+                aria-label="Close modal"
+              >
                 ✕
               </button>
-            </li>
-          ))}
-        </ul>
+            </div>
+            
+            <div style={themedStyles.modalBody}>
+              <p style={themedStyles.confirmMessage}>
+                Are you sure you want to delete <strong>"{wordToDelete}"</strong>?
+              </p>
+              <p style={themedStyles.confirmSubMessage}>
+                This action cannot be undone.
+              </p>
+              
+              <div style={themedStyles.modalActions}>
+                <button 
+                  onClick={cancelDelete} 
+                  style={themedStyles.modalCancelBtn}
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmDelete} 
+                  style={themedStyles.modalDeleteBtn}
+                >
+                  Delete Word
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -737,23 +874,23 @@ function getThemedStyles(theme) {
   return {
     appWrapper: {
       minHeight: '100vh',
-      background: isDark ? '#181a1b' : '#f7f7fa',
-      color: isDark ? '#f7f7fa' : '#222',
+      background: isDark ? '#181a1b' : '#f5f7fa',
+      color: isDark ? '#f7f7fa' : '#1a202c',
       transition: 'background 0.3s, color 0.3s',
     },
     header: {
       background: isDark 
         ? 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' 
-        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
       boxShadow: isDark 
         ? '0 4px 20px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)' 
-        : '0 4px 20px rgba(102, 126, 234, 0.15), 0 2px 8px rgba(0,0,0,0.1)',
+        : '0 2px 8px rgba(79, 70, 229, 0.25)',
       padding: '1.5rem 2rem',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       flexWrap: 'wrap',
-      borderBottom: isDark ? '1px solid #34495e' : '1px solid #e0e6ed',
+      borderBottom: isDark ? '1px solid #34495e' : 'none',
       position: 'sticky',
       top: 0,
       zIndex: 1000,
@@ -764,8 +901,8 @@ function getThemedStyles(theme) {
       fontSize: '2rem',
       fontWeight: 800,
       color: '#ffffff',
-      fontFamily: "'Segoe UI', 'Roboto', sans-serif",
-      letterSpacing: '0.03em',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      letterSpacing: '-0.02em',
       textShadow: '0 2px 4px rgba(0,0,0,0.3)',
       background: 'linear-gradient(45deg, #fff, #f0f8ff)',
       WebkitBackgroundClip: 'text',
@@ -813,45 +950,44 @@ function getThemedStyles(theme) {
       border: '1px solid rgba(255, 255, 255, 0.4)',
     },
     themeToggleBtn: {
-      fontSize: '1rem',
-      padding: '0.6rem 1rem',
-      borderRadius: '8px',
-      border: '1px solid rgba(255, 255, 255, 0.3)',
-      background: 'rgba(255, 255, 255, 0.15)',
+      fontSize: '1.3rem',
+      padding: '0.5rem',
+      background: 'none',
+      border: 'none',
       color: '#ffffff',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      backdropFilter: 'blur(10px)',
-      fontWeight: 600,
-      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
+      transition: 'all 0.2s ease',
+      outline: 'none',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      lineHeight: 1,
       '&:hover': {
-        background: 'rgba(255, 255, 255, 0.25)',
-        transform: 'translateY(-1px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        transform: 'scale(1.15)',
       },
     },
     page: {
-      fontFamily: 'sans-serif',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       padding: '2rem',
       maxWidth: '800px',
       margin: 'auto',
-      background: isDark ? '#23272a' : '#fff',
+      background: isDark ? '#23272a' : '#ffffff',
       borderRadius: '12px',
-      boxShadow: isDark ? '0 2px 16px #111' : '0 2px 16px #e0e0e0',
+      boxShadow: isDark ? '0 2px 16px #111' : '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
       marginTop: '2rem',
-      color: isDark ? '#f7f7fa' : '#222',
+      color: isDark ? '#f7f7fa' : '#1a202c',
       transition: 'background 0.3s, color 0.3s',
     },
     input: {
       fontSize: '1.2rem',
       padding: '0.5rem',
-      border: isDark ? '2px solid #444' : '2px solid #ccc',
-      borderRadius: '4px',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '8px',
       width: 'calc(100% - 1rem)',
       maxWidth: '400px',
       marginRight: '0.5rem',
-      background: isDark ? '#181a1b' : '#fff',
-      color: isDark ? '#f7f7fa' : '#222',
+      background: isDark ? '#181a1b' : '#ffffff',
+      color: isDark ? '#f7f7fa' : '#1a202c',
       outline: isDark ? '1px solid #3498db' : 'none',
       transition: 'background 0.3s, color 0.3s',
     },
@@ -880,10 +1016,10 @@ function getThemedStyles(theme) {
       display: 'flex',
       alignItems: 'center',
       gap: '0.3rem',
-      boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+      boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.12)',
       '&:hover': {
         transform: 'translateY(-1px)',
-        boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.2)',
+        boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.16)',
       },
     },
 
@@ -933,28 +1069,37 @@ function getThemedStyles(theme) {
       marginLeft: '1rem',
       cursor: 'pointer',
       border: 'none',
-      background: 'transparent',
-      fontSize: '1.2rem',
-      color: isDark ? '#ff7675' : '#c00',
-      transition: 'color 0.2s',
-      borderRadius: '50%',
-      width: '2rem',
-      height: '2rem',
+      background: isDark ? 'rgba(255, 118, 117, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+      fontSize: '1.1rem',
+      color: isDark ? '#ff7675' : '#ef4444',
+      transition: 'all 0.2s ease',
+      borderRadius: '8px',
+      padding: '0.5rem 0.75rem',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       outline: 'none',
+      fontWeight: 600,
+      '&:hover': {
+        background: isDark ? 'rgba(255, 118, 117, 0.2)' : 'rgba(239, 68, 68, 0.15)',
+        transform: 'scale(1.05)',
+      },
     },
     addBtn: {
-      fontSize: '1rem',
-      padding: '0.5rem 1rem',
-      marginLeft: '0.5rem',
-      background: isDark ? '#27ae60' : '#4CAF50',
+      fontSize: '1.05rem',
+      padding: '0.85rem 2rem',
+      background: isDark ? '#27ae60' : '#10b981',
       color: '#fff',
       border: 'none',
-      borderRadius: '4px',
+      borderRadius: '10px',
       cursor: 'pointer',
-      transition: 'background 0.2s',
+      fontWeight: 600,
+      transition: 'all 0.2s ease',
+      boxShadow: isDark ? '0 2px 8px rgba(39, 174, 96, 0.3)' : '0 2px 8px rgba(16, 185, 129, 0.25)',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: isDark ? '0 4px 12px rgba(39, 174, 96, 0.4)' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+      },
     },
     clearBtn: {
       fontSize: '1rem',
@@ -970,10 +1115,10 @@ function getThemedStyles(theme) {
       marginTop: '1rem',
       fontSize: '1rem',
       padding: '0.5rem 1rem',
-      background: isDark ? '#2980b9' : '#3498db',
+      background: isDark ? '#2980b9' : '#3b82f6',
       color: '#fff',
       border: 'none',
-      borderRadius: '4px',
+      borderRadius: '8px',
       cursor: 'pointer',
       transition: 'background 0.2s',
       display: 'block',
@@ -986,55 +1131,73 @@ function getThemedStyles(theme) {
       opacity: 0,
     },
     manageTitle: {
-      fontSize: '1.3rem',
-      fontWeight: 600,
-      marginBottom: '1.5rem',
-      letterSpacing: '0.01em',
-      color: isDark ? '#f7f7fa' : '#222',
+      fontSize: '1.8rem',
+      fontWeight: 700,
+      marginBottom: '0.5rem',
+      letterSpacing: '-0.02em',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      textAlign: 'center',
+    },
+    manageSubtitle: {
+      fontSize: '0.95rem',
+      fontWeight: 400,
+      marginBottom: '2rem',
+      color: isDark ? '#b0b0b0' : '#64748b',
       textAlign: 'center',
     },
     manageInputRow: {
       display: 'flex',
-      alignItems: 'center',
-      marginBottom: '1.5rem',
-      justifyContent: 'center',
-      gap: '0.5rem',
+      flexDirection: 'column',
+      marginBottom: '2rem',
+      gap: '0.75rem',
+      maxWidth: '500px',
+      margin: '0 auto 2rem auto',
     },
     manageInput: {
-      fontSize: '1.1rem',
-      padding: '0.5rem',
-      border: isDark ? '2px solid #444' : '2px solid #ccc',
-      borderRadius: '6px',
-      width: '220px',
-      background: isDark ? '#181a1b' : '#fff',
-      color: isDark ? '#f7f7fa' : '#222',
-      outline: isDark ? '1px solid #3498db' : 'none',
-      transition: 'background 0.3s, color 0.3s',
+      fontSize: '1.05rem',
+      padding: '0.85rem 1rem',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '10px',
+      width: '100%',
+      background: isDark ? '#181a1b' : '#ffffff',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      outline: 'none',
+      transition: 'all 0.2s ease',
+      boxSizing: 'border-box',
+      '&:focus': {
+        borderColor: isDark ? '#3498db' : '#4f46e5',
+        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(79, 70, 229, 0.1)',
+      },
     },
     manageList: {
       listStyle: 'none',
       padding: 0,
       margin: 0,
-      maxWidth: '400px',
+      maxWidth: '600px',
       marginLeft: 'auto',
       marginRight: 'auto',
     },
     manageListItem: {
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
-      background: isDark ? '#23272a' : '#f3f6fa',
-      borderRadius: '8px',
-      padding: '0.7rem 1rem',
-      marginBottom: '0.7rem',
-      boxShadow: isDark ? '0 1px 4px #111' : '0 1px 4px #e0e0e0',
-      border: isDark ? '1px solid #333' : '1px solid #dbeafe',
-      transition: 'background 0.2s, color 0.2s, border 0.2s',
+      background: isDark ? '#23272a' : '#f9fafb',
+      borderRadius: '12px',
+      padding: '1.1rem 1.3rem',
+      marginBottom: '0.8rem',
+      boxShadow: isDark ? '0 1px 4px #111' : '0 1px 3px rgba(0,0,0,0.05)',
+      border: isDark ? '1px solid #333' : '1px solid #e2e8f0',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        boxShadow: isDark ? '0 2px 8px #111' : '0 2px 8px rgba(0,0,0,0.1)',
+        transform: 'translateY(-1px)',
+      },
     },
     manageWord: {
-      fontWeight: 500,
-      fontSize: '1.1rem',
-      color: isDark ? '#f7f7fa' : '#222',
+      fontWeight: 600,
+      fontSize: '1.15rem',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      marginBottom: '0.3rem',
     },
 
     storageIndicator: {
@@ -1044,22 +1207,22 @@ function getThemedStyles(theme) {
     onlineIndicator: {
       display: 'inline-block',
       padding: '0.4rem 0.8rem',
-      background: isDark ? 'rgba(46, 204, 113, 0.2)' : 'rgba(46, 204, 113, 0.1)',
-      color: isDark ? '#2ecc71' : '#27ae60',
+      background: isDark ? 'rgba(46, 204, 113, 0.2)' : 'rgba(16, 185, 129, 0.1)',
+      color: isDark ? '#2ecc71' : '#059669',
       borderRadius: '20px',
       fontSize: '0.9rem',
       fontWeight: 600,
-      border: isDark ? '1px solid #2ecc71' : '1px solid #27ae60',
+      border: isDark ? '1px solid #2ecc71' : '1px solid #10b981',
     },
     localIndicator: {
       display: 'inline-block',
       padding: '0.4rem 0.8rem',
-      background: isDark ? 'rgba(52, 152, 219, 0.2)' : 'rgba(52, 152, 219, 0.1)',
-      color: isDark ? '#3498db' : '#2980b9',
+      background: isDark ? 'rgba(52, 152, 219, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+      color: isDark ? '#3498db' : '#2563eb',
       borderRadius: '20px',
       fontSize: '0.9rem',
       fontWeight: 600,
-      border: isDark ? '1px solid #3498db' : '1px solid #2980b9',
+      border: isDark ? '1px solid #3498db' : '1px solid #3b82f6',
     },
 
     searchContainer: {
@@ -1068,18 +1231,19 @@ function getThemedStyles(theme) {
     },
     searchInput: {
       width: '100%',
-      maxWidth: '400px',
+      maxWidth: '600px',
       fontSize: '1rem',
-      padding: '0.7rem 1rem',
-      border: isDark ? '2px solid #444' : '2px solid #ccc',
-      borderRadius: '25px',
-      background: isDark ? '#181a1b' : '#fff',
-      color: isDark ? '#f7f7fa' : '#222',
+      padding: '0.85rem 1.2rem',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '12px',
+      background: isDark ? '#181a1b' : '#f9fafb',
+      color: isDark ? '#f7f7fa' : '#1a202c',
       outline: 'none',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.2s ease',
       '&:focus': {
-        borderColor: isDark ? '#3498db' : '#2980b9',
-        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(52, 152, 219, 0.1)',
+        borderColor: isDark ? '#3498db' : '#4f46e5',
+        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(79, 70, 229, 0.1)',
+        background: isDark ? '#181a1b' : '#ffffff',
       },
     },
 
@@ -1087,22 +1251,24 @@ function getThemedStyles(theme) {
       marginBottom: '1.5rem',
     },
     descriptionRow: {
-      marginTop: '0.5rem',
       display: 'flex',
       justifyContent: 'center',
     },
     descriptionInput: {
       width: '100%',
-      maxWidth: '400px',
-      fontSize: '0.9rem',
-      padding: '0.5rem 0.8rem',
-      border: isDark ? '1px solid #444' : '1px solid #ccc',
-      borderRadius: '6px',
-      background: isDark ? '#181a1b' : '#fff',
-      color: isDark ? '#f7f7fa' : '#222',
+      fontSize: '0.95rem',
+      padding: '0.85rem 1rem',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '10px',
+      background: isDark ? '#181a1b' : '#ffffff',
+      color: isDark ? '#f7f7fa' : '#64748b',
       outline: 'none',
-      transition: 'all 0.3s ease',
-      fontStyle: 'italic',
+      transition: 'all 0.2s ease',
+      boxSizing: 'border-box',
+      '&:focus': {
+        borderColor: isDark ? '#3498db' : '#4f46e5',
+        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(79, 70, 229, 0.1)',
+      },
     },
 
     wordContent: {
@@ -1112,10 +1278,217 @@ function getThemedStyles(theme) {
       flex: 1,
     },
     wordDescription: {
-      fontSize: '0.85rem',
-      color: isDark ? '#b0b0b0' : '#666',
-      fontStyle: 'italic',
+      fontSize: '0.9rem',
+      color: isDark ? '#b0b0b0' : '#64748b',
+      lineHeight: '1.5',
       marginTop: '0.2rem',
+    },
+    wordLabel: {
+      fontSize: '0.7rem',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      color: isDark ? '#666' : '#9ca3af',
+      marginBottom: '0.2rem',
+    },
+
+    addWordButton: {
+      fontSize: '1rem',
+      padding: '0.75rem 1.5rem',
+      background: isDark ? '#27ae60' : '#10b981',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      fontWeight: 600,
+      transition: 'all 0.2s ease',
+      boxShadow: isDark ? '0 2px 8px rgba(39, 174, 96, 0.3)' : '0 2px 8px rgba(16, 185, 129, 0.25)',
+      whiteSpace: 'nowrap',
+      '&:hover': {
+        transform: 'translateY(-2px)',
+        boxShadow: isDark ? '0 4px 12px rgba(39, 174, 96, 0.4)' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+      },
+    },
+
+    modalOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 0, 0, 0.6)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 9999,
+      backdropFilter: 'blur(4px)',
+      animation: 'fadeIn 0.2s ease',
+    },
+
+    modalContent: {
+      background: isDark ? '#23272a' : '#ffffff',
+      borderRadius: '16px',
+      boxShadow: isDark ? '0 20px 60px rgba(0, 0, 0, 0.5)' : '0 20px 60px rgba(0, 0, 0, 0.15)',
+      width: '90%',
+      maxWidth: '500px',
+      maxHeight: '90vh',
+      overflow: 'auto',
+      animation: 'slideUp 0.3s ease',
+    },
+
+    modalHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '1.5rem',
+      borderBottom: isDark ? '1px solid #333' : '1px solid #e2e8f0',
+    },
+
+    modalTitle: {
+      margin: 0,
+      fontSize: '1.5rem',
+      fontWeight: 700,
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      letterSpacing: '-0.02em',
+    },
+
+    modalCloseBtn: {
+      background: 'none',
+      border: 'none',
+      fontSize: '1.5rem',
+      color: isDark ? '#b0b0b0' : '#64748b',
+      cursor: 'pointer',
+      padding: '0.25rem',
+      width: '2rem',
+      height: '2rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: '6px',
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+        color: isDark ? '#f7f7fa' : '#1a202c',
+      },
+    },
+
+    modalBody: {
+      padding: '1.5rem',
+    },
+
+    modalFormGroup: {
+      marginBottom: '1.25rem',
+    },
+
+    modalLabel: {
+      display: 'block',
+      fontSize: '0.9rem',
+      fontWeight: 600,
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      marginBottom: '0.5rem',
+    },
+
+    modalInput: {
+      width: '100%',
+      fontSize: '1rem',
+      padding: '0.85rem 1rem',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '10px',
+      background: isDark ? '#181a1b' : '#f9fafb',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      outline: 'none',
+      transition: 'all 0.2s ease',
+      boxSizing: 'border-box',
+      '&:focus': {
+        borderColor: isDark ? '#3498db' : '#4f46e5',
+        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(79, 70, 229, 0.1)',
+        background: isDark ? '#181a1b' : '#ffffff',
+      },
+    },
+
+    modalActions: {
+      display: 'flex',
+      gap: '0.75rem',
+      justifyContent: 'flex-end',
+      marginTop: '1.5rem',
+    },
+
+    modalCancelBtn: {
+      fontSize: '1rem',
+      padding: '0.75rem 1.5rem',
+      background: isDark ? 'rgba(255, 255, 255, 0.1)' : '#e2e8f0',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      border: 'none',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      fontWeight: 600,
+      transition: 'all 0.2s ease',
+      '&:hover': {
+        background: isDark ? 'rgba(255, 255, 255, 0.15)' : '#cbd5e1',
+      },
+    },
+
+    modalAddBtn: {
+      fontSize: '1rem',
+      padding: '0.75rem 1.5rem',
+      background: isDark ? '#27ae60' : '#10b981',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      fontWeight: 600,
+      transition: 'all 0.2s ease',
+      boxShadow: isDark ? '0 2px 8px rgba(39, 174, 96, 0.3)' : '0 2px 8px rgba(16, 185, 129, 0.25)',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: isDark ? '0 4px 12px rgba(39, 174, 96, 0.4)' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+      },
+      '&:disabled': {
+        opacity: 0.5,
+        cursor: 'not-allowed',
+        transform: 'none',
+      },
+    },
+
+    confirmModalContent: {
+      background: isDark ? '#23272a' : '#ffffff',
+      borderRadius: '16px',
+      boxShadow: isDark ? '0 20px 60px rgba(0, 0, 0, 0.5)' : '0 20px 60px rgba(0, 0, 0, 0.15)',
+      width: '90%',
+      maxWidth: '450px',
+      animation: 'slideUp 0.3s ease',
+    },
+
+    confirmMessage: {
+      fontSize: '1rem',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      marginBottom: '0.75rem',
+      lineHeight: '1.5',
+    },
+
+    confirmSubMessage: {
+      fontSize: '0.9rem',
+      color: isDark ? '#b0b0b0' : '#64748b',
+      marginBottom: '1.5rem',
+      lineHeight: '1.5',
+    },
+
+    modalDeleteBtn: {
+      fontSize: '1rem',
+      padding: '0.75rem 1.5rem',
+      background: isDark ? '#e74c3c' : '#ef4444',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '10px',
+      cursor: 'pointer',
+      fontWeight: 600,
+      transition: 'all 0.2s ease',
+      boxShadow: isDark ? '0 2px 8px rgba(231, 76, 60, 0.3)' : '0 2px 8px rgba(239, 68, 68, 0.25)',
+      '&:hover': {
+        transform: 'translateY(-1px)',
+        boxShadow: isDark ? '0 4px 12px rgba(231, 76, 60, 0.4)' : '0 4px 12px rgba(239, 68, 68, 0.3)',
+        background: isDark ? '#c0392b' : '#dc2626',
+      },
     },
 
     authForm: {
@@ -1129,10 +1502,10 @@ function getThemedStyles(theme) {
       width: '100%',
       fontSize: '1.1rem',
       padding: '0.7rem',
-      border: isDark ? '2px solid #444' : '2px solid #ccc',
-      borderRadius: '6px',
-      background: isDark ? '#181a1b' : '#fff',
-      color: isDark ? '#f7f7fa' : '#222',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '8px',
+      background: isDark ? '#181a1b' : '#ffffff',
+      color: isDark ? '#f7f7fa' : '#1a202c',
       outline: isDark ? '1px solid #3498db' : 'none',
       transition: 'background 0.3s, color 0.3s',
       boxSizing: 'border-box',
@@ -1141,10 +1514,10 @@ function getThemedStyles(theme) {
       width: '100%',
       fontSize: '1.1rem',
       padding: '0.7rem',
-      background: isDark ? '#27ae60' : '#4CAF50',
+      background: isDark ? '#27ae60' : '#4f46e5',
       color: '#fff',
       border: 'none',
-      borderRadius: '6px',
+      borderRadius: '8px',
       cursor: 'pointer',
       transition: 'background 0.2s',
       fontWeight: 600,
@@ -1152,35 +1525,32 @@ function getThemedStyles(theme) {
     authSwitch: {
       textAlign: 'center',
       marginTop: '1.5rem',
-      color: isDark ? '#f7f7fa' : '#222',
+      color: isDark ? '#f7f7fa' : '#1a202c',
     },
     authSwitchButton: {
       background: 'none',
       border: 'none',
-      color: isDark ? '#3498db' : '#2980b9',
+      color: isDark ? '#3498db' : '#4f46e5',
       cursor: 'pointer',
       textDecoration: 'underline',
       fontSize: '1rem',
       marginLeft: '0.5rem',
     },
     errorMessage: {
-      background: isDark ? '#c0392b' : '#ffebee',
-      color: isDark ? '#fff' : '#c62828',
+      background: isDark ? '#c0392b' : '#fee2e2',
+      color: isDark ? '#fff' : '#991b1b',
       padding: '0.7rem',
-      borderRadius: '6px',
+      borderRadius: '8px',
       marginBottom: '1rem',
-      border: isDark ? '1px solid #e74c3c' : '1px solid #f44336',
+      border: isDark ? '1px solid #e74c3c' : '1px solid #fca5a5',
     },
 
     userInfo: {
       display: 'flex',
       alignItems: 'center',
       gap: '0.8rem',
-      background: 'rgba(255, 255, 255, 0.1)',
-      padding: '0.5rem 1rem',
-      borderRadius: '12px',
-      backdropFilter: 'blur(10px)',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
+      padding: '0.5rem 0',
+      whiteSpace: 'nowrap',
     },
 
     authButtons: {
@@ -1217,31 +1587,28 @@ function getThemedStyles(theme) {
     },
     logoutBtn: {
       fontSize: '0.9rem',
-      padding: '0.4rem 0.8rem',
-      background: 'rgba(231, 76, 60, 0.8)',
-      color: '#ffffff',
-      border: '1px solid rgba(231, 76, 60, 0.6)',
-      borderRadius: '6px',
+      padding: '0.5rem 1rem',
+      background: isDark ? 'rgba(231, 76, 60, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+      color: isDark ? '#ff7675' : '#ef4444',
+      border: isDark ? '1px solid rgba(231, 76, 60, 0.3)' : '1px solid rgba(239, 68, 68, 0.2)',
+      borderRadius: '8px',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.2s ease',
       fontWeight: 600,
-      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
       backdropFilter: 'blur(10px)',
+      whiteSpace: 'nowrap',
+      marginLeft: 'auto',
       '&:hover': {
-        background: 'rgba(231, 76, 60, 1)',
+        background: isDark ? 'rgba(231, 76, 60, 0.25)' : 'rgba(239, 68, 68, 0.15)',
         transform: 'translateY(-1px)',
-        boxShadow: '0 4px 12px rgba(231, 76, 60, 0.3)',
+        boxShadow: isDark ? '0 2px 8px rgba(231, 76, 60, 0.3)' : '0 2px 8px rgba(239, 68, 68, 0.2)',
       },
     },
 
     headerStreak: {
       display: 'flex',
       alignItems: 'center',
-      background: 'rgba(255, 107, 107, 0.15)',
       padding: '0.4rem 0.8rem',
-      borderRadius: '8px',
-      border: '1px solid rgba(255, 107, 107, 0.3)',
-      backdropFilter: 'blur(10px)',
     },
     headerStreakContent: {
       display: 'flex',
