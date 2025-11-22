@@ -100,10 +100,8 @@ export default function PhonogramsPage({ themedStyles, theme }) {
       setHasStartedTyping(false);
 
       if (typedWords.length + 1 === currentWords.length) {
-
-        setTimeout(() => {
-          moveToNext();
-        }, 500);
+        // Move to next immediately
+        moveToNext();
       }
     } else {
       setCurrentInput(val);
@@ -240,9 +238,9 @@ export default function PhonogramsPage({ themedStyles, theme }) {
           <span style={phonogramStyles.patternBadge(theme)}>{currentPhonogram.pattern}</span>
           <span style={phonogramStyles.soundBadge(theme)}>{currentSound.sound}</span>
         </div>
-        <p style={phonogramStyles.explanation}>{currentSound.explanation}</p>
+        <p style={phonogramStyles.explanation(theme)}>{currentSound.explanation}</p>
         {currentPhonogram.notes && (
-          <p style={phonogramStyles.notes}>
+          <p style={phonogramStyles.notes(theme)}>
             💡 <em>{currentPhonogram.notes}</em>
           </p>
         )}
@@ -277,7 +275,7 @@ export default function PhonogramsPage({ themedStyles, theme }) {
           }}
           style={{
             ...themedStyles.showListBtn,
-            background: theme === 'dark' ? '#9b59b6' : '#8e44ad',
+            background: theme === 'dark' ? '#9b59b6' : '#475569',
             color: '#fff'
           }}
           disabled={!getCurrentWord()}
@@ -295,8 +293,8 @@ export default function PhonogramsPage({ themedStyles, theme }) {
           }}
           style={{
             ...themedStyles.showListBtn,
-            background: showList ? (theme === 'dark' ? '#27ae60' : '#4CAF50') : (theme === 'dark' ? '#444' : '#ccc'),
-            color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#222')
+            background: showList ? (theme === 'dark' ? '#27ae60' : '#2563eb') : (theme === 'dark' ? '#444' : '#cbd5e1'),
+            color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#334155')
           }}
           title="Press Ctrl+L to toggle"
         >
@@ -390,7 +388,12 @@ export default function PhonogramsPage({ themedStyles, theme }) {
             e.stopPropagation();
             resetCurrentTest();
           }} 
-          style={{...themedStyles.redoBtn, marginRight: '1rem'}}
+          style={{
+            ...themedStyles.redoBtn,
+            marginRight: '1rem',
+            background: theme === 'dark' ? '#2980b9' : '#e2e8f0',
+            color: theme === 'dark' ? '#fff' : '#334155'
+          }}
         >
           Redo Current Test
         </button>
@@ -401,7 +404,8 @@ export default function PhonogramsPage({ themedStyles, theme }) {
           }} 
           style={{
             ...themedStyles.redoBtn,
-            background: theme === 'dark' ? '#c0392b' : '#e74c3c'
+            background: theme === 'dark' ? '#c0392b' : '#ef4444',
+            color: '#fff'
           }}
         >
           Reset All Progress
@@ -439,20 +443,21 @@ const phonogramStyles = {
     height: '100%',
     background: theme === 'dark' 
       ? 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)'
-      : 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
+      : '#2563eb', // Solid Blue
     transition: 'width 0.5s ease',
     borderRadius: '10px',
   }),
   patternCard: (theme) => ({
     background: theme === 'dark' 
       ? 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)'
-      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      : '#ffffff', // White
     padding: '1.5rem',
     borderRadius: '12px',
     marginBottom: '1.5rem',
+    border: theme === 'dark' ? 'none' : '1px solid #e2e8f0',
     boxShadow: theme === 'dark' 
       ? '0 4px 20px rgba(0,0,0,0.3)' 
-      : '0 4px 20px rgba(102, 126, 234, 0.15)',
+      : '0 1px 3px 0 rgb(0 0 0 / 0.1)',
   }),
   patternHeader: {
     display: 'flex',
@@ -461,52 +466,52 @@ const phonogramStyles = {
     flexWrap: 'wrap',
   },
   patternBadge: (theme) => ({
-    background: 'rgba(255, 255, 255, 0.2)',
-    color: '#ffffff',
+    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.2)' : '#eff6ff', // Blue 50
+    color: theme === 'dark' ? '#ffffff' : '#1d4ed8', // Blue 700
     padding: '0.5rem 1rem',
     borderRadius: '8px',
     fontSize: '1.5rem',
     fontWeight: 'bold',
     fontFamily: 'monospace',
     backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
+    border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid #bfdbfe',
   }),
   soundBadge: (theme) => ({
-    background: 'rgba(255, 255, 255, 0.15)',
-    color: '#ffffff',
+    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.15)' : '#f8fafc', // Slate 50
+    color: theme === 'dark' ? '#ffffff' : '#334155', // Slate 700
     padding: '0.5rem 1rem',
     borderRadius: '8px',
     fontSize: '1.2rem',
     fontWeight: '600',
     backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
+    border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #e2e8f0',
   }),
-  explanation: {
-    color: '#ffffff',
+  explanation: (theme) => ({
+    color: theme === 'dark' ? '#ffffff' : '#334155', // Slate 700
     fontSize: '1.1rem',
     marginBottom: '0.5rem',
     lineHeight: '1.6',
-  },
-  notes: {
-    color: 'rgba(255, 255, 255, 0.9)',
+  }),
+  notes: (theme) => ({
+    color: theme === 'dark' ? 'rgba(255, 255, 255, 0.9)' : '#475569', // Slate 600
     fontSize: '0.95rem',
     marginTop: '1rem',
     padding: '0.8rem',
-    background: 'rgba(255, 255, 255, 0.1)',
+    background: theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#f1f5f9', // Slate 100
     borderRadius: '8px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-  },
+    border: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid #e2e8f0',
+  }),
   navButton: (theme) => ({
     fontSize: '1rem',
     padding: '0.6rem 1.2rem',
     borderRadius: '8px',
     border: 'none',
-    background: theme === 'dark' ? '#3498db' : '#2980b9',
+    background: theme === 'dark' ? '#3498db' : '#2563eb', // Corporate Blue
     color: '#fff',
     cursor: 'pointer',
     transition: 'all 0.3s ease',
     fontWeight: '600',
-    boxShadow: theme === 'dark' ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.1)',
+    boxShadow: 'none',
   }),
   instructionText: {
     textAlign: 'center',

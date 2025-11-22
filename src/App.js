@@ -332,6 +332,14 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
   const [showList, setShowList] = useState(false);
   const inputRef = useRef(null);
+  const activeWordRef = useRef(null);
+  const viewportRef = useRef(null);
+
+  useEffect(() => {
+    if (activeWordRef.current) {
+      activeWordRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [typedWords]);
 
   const loadWords = async () => {
     setIsLoading(true);
@@ -471,7 +479,7 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
           }}
           style={{
             ...themedStyles.showListBtn,
-            background: theme === 'dark' ? '#9b59b6' : '#8e44ad',
+            background: theme === 'dark' ? '#9b59b6' : '#475569', // Slate 600
             color: '#fff'
           }}
           disabled={!getCurrentWord()}
@@ -488,8 +496,8 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
           }}
           style={{
             ...themedStyles.showListBtn,
-            background: showList ? (theme === 'dark' ? '#27ae60' : '#4CAF50') : (theme === 'dark' ? '#444' : '#ccc'),
-            color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#222')
+            background: showList ? (theme === 'dark' ? '#27ae60' : '#2563eb') : (theme === 'dark' ? '#444' : '#cbd5e1'),
+            color: showList ? '#fff' : (theme === 'dark' ? '#f7f7fa' : '#334155')
           }}
           title="Press Ctrl+L to toggle"
         >
@@ -497,21 +505,23 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
         </button>
       </div>
       
-      <div style={themedStyles.wordContainer}>
-        {wordList.map((word, i) => {
-          if (i === typedWords.length) {
-            const shouldHideCurrentWord = showList && hasStartedTyping && currentInput.length > 0;
-            
-            return (
-              <span
-                key={i}
-                style={{
-                  marginRight: '0.8rem',
-                  borderBottom: '2px solid #3498db',
-                  transition: 'all 0.3s ease',
-                  visibility: shouldHideCurrentWord ? 'hidden' : 'visible',
-                }}
-              >
+      <div style={themedStyles.wordsViewport} ref={viewportRef}>
+        <div style={themedStyles.wordContainer}>
+          {wordList.map((word, i) => {
+            if (i === typedWords.length) {
+              const shouldHideCurrentWord = showList && hasStartedTyping && currentInput.length > 0;
+              
+              return (
+                <span
+                  key={i}
+                  ref={activeWordRef}
+                  style={{
+                    marginRight: '0.8rem',
+                    borderBottom: '2px solid #3498db',
+                    // Removed transition for instant feedback
+                    visibility: shouldHideCurrentWord ? 'hidden' : 'visible',
+                  }}
+                >
                 {word.split('').map((char, idx) => {
                   const typedChar = currentInput[idx];
                   const color =
@@ -547,6 +557,7 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
             );
           }
         })}
+        </div>
       </div>
       <input
         ref={inputRef}
@@ -563,7 +574,11 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
           e.stopPropagation();
           resetTest();
         }} 
-        style={themedStyles.redoBtn}
+        style={{
+          ...themedStyles.redoBtn,
+          background: theme === 'dark' ? '#2980b9' : '#e2e8f0', // Slate 200
+          color: theme === 'dark' ? '#fff' : '#334155', // Slate 700
+        }}
       >
         Redo Test
       </button>
@@ -874,18 +889,18 @@ function getThemedStyles(theme) {
   return {
     appWrapper: {
       minHeight: '100vh',
-      background: isDark ? '#181a1b' : '#f5f7fa',
-      color: isDark ? '#f7f7fa' : '#1a202c',
+      background: isDark ? '#181a1b' : '#f8fafc', // Slate 50
+      color: isDark ? '#f7f7fa' : '#0f172a', // Slate 900
       transition: 'background 0.3s, color 0.3s',
     },
     header: {
       background: isDark 
         ? 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)' 
-        : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+        : '#0f172a', // Slate 900 - Solid Professional Dark
       boxShadow: isDark 
         ? '0 4px 20px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2)' 
-        : '0 2px 8px rgba(79, 70, 229, 0.25)',
-      padding: '1.5rem 2rem',
+        : '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+      padding: '1rem 2rem', // Slightly more compact
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -894,60 +909,48 @@ function getThemedStyles(theme) {
       position: 'sticky',
       top: 0,
       zIndex: 1000,
-      backdropFilter: 'blur(10px)',
     },
     title: {
       margin: 0,
-      fontSize: '2rem',
-      fontWeight: 800,
+      fontSize: '1.5rem', // More professional size
+      fontWeight: 700,
       color: '#ffffff',
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      letterSpacing: '-0.02em',
-      textShadow: '0 2px 4px rgba(0,0,0,0.3)',
-      background: 'linear-gradient(45deg, #fff, #f0f8ff)',
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text',
+      letterSpacing: '-0.025em',
       display: 'flex',
       alignItems: 'center',
       gap: '0.5rem',
     },
     nav: {
       display: 'flex',
-      gap: '1rem',
+      gap: '0.5rem', // Tighter gap
       alignItems: 'center',
       flexWrap: 'wrap',
     },
     navLink: {
-      fontSize: '1.1rem',
-      color: '#ffffff',
+      fontSize: '0.95rem',
+      color: '#cbd5e1', // Slate 300
       textDecoration: 'none',
-      padding: '0.7rem 1.2rem',
-      borderRadius: '8px',
-      fontWeight: 600,
-      transition: 'all 0.3s ease',
+      padding: '0.5rem 1rem',
+      borderRadius: '6px',
+      fontWeight: 500,
+      transition: 'all 0.2s ease',
       cursor: 'pointer',
-      border: '1px solid rgba(255, 255, 255, 0.2)',
-      background: 'rgba(255, 255, 255, 0.1)',
+      border: 'none', // Removed border
+      background: 'transparent', // Transparent by default
       outline: 'none',
       position: 'relative',
       display: 'inline-block',
-      backdropFilter: 'blur(10px)',
-      textShadow: '0 1px 2px rgba(0,0,0,0.2)',
       '&:hover': {
-        background: 'rgba(255, 255, 255, 0.2)',
-        transform: 'translateY(-1px)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        color: '#ffffff',
+        background: 'rgba(255, 255, 255, 0.1)',
       },
     },
     navLinkActive: {
-      background: 'rgba(255, 255, 255, 0.25)',
+      background: 'rgba(255, 255, 255, 0.15)',
       color: '#ffffff',
-      fontWeight: 700,
+      fontWeight: 600,
       textDecoration: 'none',
-      transform: 'translateY(-2px)',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-      border: '1px solid rgba(255, 255, 255, 0.4)',
     },
     themeToggleBtn: {
       fontSize: '1.3rem',
@@ -968,36 +971,48 @@ function getThemedStyles(theme) {
     },
     page: {
       fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      padding: '2rem',
-      maxWidth: '800px',
+      padding: '2.5rem',
+      maxWidth: '900px',
       margin: 'auto',
       background: isDark ? '#23272a' : '#ffffff',
-      borderRadius: '12px',
-      boxShadow: isDark ? '0 2px 16px #111' : '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-      marginTop: '2rem',
-      color: isDark ? '#f7f7fa' : '#1a202c',
+      borderRadius: '8px', // Less rounded
+      boxShadow: isDark 
+        ? '0 2px 16px #111' 
+        : '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.06)', // Subtle Tailwind-like shadow
+      border: isDark ? 'none' : '1px solid #e2e8f0', // Subtle border for light mode
+      marginTop: '3rem',
+      color: isDark ? '#f7f7fa' : '#334155', // Slate 700
       transition: 'background 0.3s, color 0.3s',
     },
     input: {
-      fontSize: '1.2rem',
-      padding: '0.5rem',
-      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
-      borderRadius: '8px',
+      fontSize: '1.1rem',
+      padding: '0.75rem 1rem',
+      border: isDark ? '2px solid #444' : '1px solid #cbd5e1',
+      borderRadius: '6px',
       width: 'calc(100% - 1rem)',
       maxWidth: '400px',
       marginRight: '0.5rem',
       background: isDark ? '#181a1b' : '#ffffff',
-      color: isDark ? '#f7f7fa' : '#1a202c',
-      outline: isDark ? '1px solid #3498db' : 'none',
-      transition: 'background 0.3s, color 0.3s',
+      color: isDark ? '#f7f7fa' : '#0f172a',
+      outline: 'none',
+      transition: 'all 0.2s ease',
+    },
+    wordsViewport: {
+      overflow: 'hidden',
+      maxHeight: '12.5rem', 
+      marginTop: '4rem',
+      marginBottom: '1rem',
+      position: 'relative',
+      maskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
+      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
     },
     wordContainer: {
       display: 'flex',
       flexWrap: 'wrap',
       fontSize: '1.5rem',
-      marginBottom: '1rem',
       lineHeight: '2.5rem',
-      marginTop: '100px',
+      justifyContent: 'flex-start',
+      textAlign: 'left',
     },
     controlsContainer: {
       display: 'flex',
@@ -1006,21 +1021,17 @@ function getThemedStyles(theme) {
       gap: '1rem',
     },
     showListBtn: {
-      fontSize: '1rem',
-      padding: '0.6rem 1.2rem',
-      borderRadius: '8px',
+      fontSize: '0.9rem',
+      padding: '0.5rem 1rem',
+      borderRadius: '6px',
       border: 'none',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      fontWeight: 600,
+      transition: 'all 0.2s ease',
+      fontWeight: 500,
       display: 'flex',
       alignItems: 'center',
       gap: '0.3rem',
-      boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.12)',
-      '&:hover': {
-        transform: 'translateY(-1px)',
-        boxShadow: isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.16)',
-      },
+      boxShadow: 'none', // Remove shadow
     },
 
     streakContainer: {
@@ -1181,16 +1192,14 @@ function getThemedStyles(theme) {
       display: 'flex',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      background: isDark ? '#23272a' : '#f9fafb',
-      borderRadius: '12px',
-      padding: '1.1rem 1.3rem',
-      marginBottom: '0.8rem',
-      boxShadow: isDark ? '0 1px 4px #111' : '0 1px 3px rgba(0,0,0,0.05)',
-      border: isDark ? '1px solid #333' : '1px solid #e2e8f0',
+      background: isDark ? '#23272a' : '#ffffff',
+      borderRadius: '8px',
+      padding: '1rem 1.2rem',
+      marginBottom: '0.5rem',
+      border: isDark ? '1px solid #333' : '1px solid #e2e8f0', // Clean border
       transition: 'all 0.2s ease',
       '&:hover': {
-        boxShadow: isDark ? '0 2px 8px #111' : '0 2px 8px rgba(0,0,0,0.1)',
-        transform: 'translateY(-1px)',
+        background: isDark ? '#2c3e50' : '#f8fafc',
       },
     },
     manageWord: {
@@ -1293,20 +1302,18 @@ function getThemedStyles(theme) {
     },
 
     addWordButton: {
-      fontSize: '1rem',
-      padding: '0.75rem 1.5rem',
-      background: isDark ? '#27ae60' : '#10b981',
+      fontSize: '0.95rem',
+      padding: '0.6rem 1.2rem',
+      background: isDark ? '#27ae60' : '#2563eb', // Corporate Blue
       color: '#fff',
       border: 'none',
-      borderRadius: '10px',
+      borderRadius: '6px',
       cursor: 'pointer',
-      fontWeight: 600,
+      fontWeight: 500,
       transition: 'all 0.2s ease',
-      boxShadow: isDark ? '0 2px 8px rgba(39, 174, 96, 0.3)' : '0 2px 8px rgba(16, 185, 129, 0.25)',
       whiteSpace: 'nowrap',
       '&:hover': {
-        transform: 'translateY(-2px)',
-        boxShadow: isDark ? '0 4px 12px rgba(39, 174, 96, 0.4)' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+        background: isDark ? '#2ecc71' : '#1d4ed8', // Darker blue hover
       },
     },
 
@@ -1429,24 +1436,21 @@ function getThemedStyles(theme) {
     },
 
     modalAddBtn: {
-      fontSize: '1rem',
+      fontSize: '0.95rem',
       padding: '0.75rem 1.5rem',
-      background: isDark ? '#27ae60' : '#10b981',
+      background: isDark ? '#27ae60' : '#2563eb',
       color: '#fff',
       border: 'none',
-      borderRadius: '10px',
+      borderRadius: '6px',
       cursor: 'pointer',
-      fontWeight: 600,
+      fontWeight: 500,
       transition: 'all 0.2s ease',
-      boxShadow: isDark ? '0 2px 8px rgba(39, 174, 96, 0.3)' : '0 2px 8px rgba(16, 185, 129, 0.25)',
       '&:hover': {
-        transform: 'translateY(-1px)',
-        boxShadow: isDark ? '0 4px 12px rgba(39, 174, 96, 0.4)' : '0 4px 12px rgba(16, 185, 129, 0.3)',
+        background: isDark ? '#2ecc71' : '#1d4ed8',
       },
       '&:disabled': {
         opacity: 0.5,
         cursor: 'not-allowed',
-        transform: 'none',
       },
     },
 
@@ -1512,15 +1516,15 @@ function getThemedStyles(theme) {
     },
     authButton: {
       width: '100%',
-      fontSize: '1.1rem',
-      padding: '0.7rem',
-      background: isDark ? '#27ae60' : '#4f46e5',
+      fontSize: '1rem',
+      padding: '0.75rem',
+      background: isDark ? '#27ae60' : '#0f172a', // Slate 900
       color: '#fff',
       border: 'none',
-      borderRadius: '8px',
+      borderRadius: '6px',
       cursor: 'pointer',
       transition: 'background 0.2s',
-      fontWeight: 600,
+      fontWeight: 500,
     },
     authSwitch: {
       textAlign: 'center',
