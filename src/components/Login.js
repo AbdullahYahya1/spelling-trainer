@@ -13,12 +13,16 @@ const Login = ({ onLogin, onSwitchToRegister, themedStyles }) => {
     setLoading(true);
     setError('');
 
-    const result = await authService.sendOtp(email);
+    const result = await authService.sendOtp(email, false);
     
     if (result.success) {
       setStep('otp');
     } else {
-      setError(result.error);
+      if (result.errorCode === 'USER_NOT_FOUND') {
+        onSwitchToRegister(result.error);
+      } else {
+        setError(result.error);
+      }
     }
     
     setLoading(false);

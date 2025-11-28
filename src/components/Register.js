@@ -20,7 +20,7 @@ const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage })
         return;
     }
 
-    const result = await authService.sendOtp(email);
+    const result = await authService.sendOtp(email, true);
     
     if (result.success) {
       setStep('otp');

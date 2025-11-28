@@ -26,6 +26,7 @@ namespace SpellingTrainer.API.Controllers
         public class SendOtpRequest
         {
             public string Email { get; set; }
+            public bool IsRegister { get; set; } = false;
         }
 
         [HttpPost("send-otp")]
@@ -34,6 +35,14 @@ namespace SpellingTrainer.API.Controllers
             if (string.IsNullOrEmpty(request.Email))
             {
                 return BadRequest("Email is required");
+            }
+
+            // Check if user exists to fail early for login attempts
+            var userExists = await _context.Users.AnyAsync(u => u.Email == request.Email);
+
+            if (!request.IsRegister && !userExists)
+            {
+                 return NotFound(new { message = "User not found. Please register first.", code = "USER_NOT_FOUND" });
             }
 
             // In a real application, we would generate a secure random OTP here.

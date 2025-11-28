@@ -33,14 +33,15 @@ export const authService = {
   },
 
   // OTP Flow - Now handled entirely by our backend
-  async sendOtp(email) {
+  async sendOtp(email, isRegister = false) {
     try {
-      const response = await api.post('/auth/send-otp', { email });
+      const response = await api.post('/auth/send-otp', { email, isRegister });
       return { success: true, data: response.data };
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Failed to send OTP' 
+        error: error.response?.data?.message || 'Failed to send OTP',
+        errorCode: error.response?.data?.code 
       };
     }
   },
