@@ -51,8 +51,8 @@ const Login = ({ onLogin, onSwitchToRegister, themedStyles }) => {
 
   return (
     <div style={{...themedStyles.page, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-      <div style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
-      <h2 style={{...themedStyles.manageTitle, marginBottom: '2rem'}}>Login with Email</h2>
+      <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', minWidth: '80%' }}>
+      <h2 style={{...themedStyles.manageTitle, marginBottom: '2rem', textAlign: 'center'}}>Login with Email</h2>
       
       {step === 'email' ? (
         <form onSubmit={handleSendOtp} style={themedStyles.authForm}>

@@ -50,8 +50,8 @@ const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage, i
 
   return (
     <div style={{...themedStyles.page, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
-      <div style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
-      <h2 style={{...themedStyles.manageTitle, marginBottom: '2rem'}}>Register</h2>
+      <div style={{ maxWidth: '600px', margin: '0 auto', width: '100%', minWidth: '80%' }}>
+      <h2 style={{...themedStyles.manageTitle, marginBottom: '2rem', textAlign: 'center'}}>Register</h2>
       
       {step === 'details' ? (
         <form onSubmit={handleSendOtp} style={themedStyles.authForm}>
