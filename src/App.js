@@ -20,6 +20,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [authPage, setAuthPage] = useState('');
+  const [authMessage, setAuthMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [streak, setStreak] = useState(null);
 
@@ -198,14 +199,21 @@ export default function App() {
         {authPage === 'login' ? (
           <Login 
             onLogin={handleLogin}
-            onSwitchToRegister={() => setAuthPage('register')}
+            onSwitchToRegister={(msg) => {
+              if (typeof msg === 'string') setAuthMessage(msg);
+              setAuthPage('register');
+            }}
             themedStyles={themedStyles}
           />
         ) : (
           <Register 
             onRegister={handleRegister}
-            onSwitchToLogin={() => setAuthPage('login')}
+            onSwitchToLogin={() => {
+              setAuthMessage('');
+              setAuthPage('login');
+            }}
             themedStyles={themedStyles}
+            initialMessage={authMessage}
           />
         )}
       </div>

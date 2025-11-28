@@ -61,7 +61,8 @@ export const authService = {
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Invalid OTP or Login failed' 
+        error: error.response?.data?.message || 'Invalid OTP or Login failed',
+        errorCode: error.response?.data?.code
       };
     }
   },

@@ -35,7 +35,11 @@ const Login = ({ onLogin, onSwitchToRegister, themedStyles }) => {
     if (result.success) {
       onLogin();
     } else {
-      setError(result.error);
+      if (result.errorCode === 'USER_NOT_FOUND') {
+        onSwitchToRegister(result.error);
+      } else {
+        setError(result.error);
+      }
     }
     
     setLoading(false);

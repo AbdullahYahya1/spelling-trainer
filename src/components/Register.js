@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { authService } from '../services/authService';
 
-const Register = ({ onRegister, onSwitchToLogin, themedStyles }) => {
+const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('details'); // 'details' or 'otp'
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialMessage || '');
 
   const handleSendOtp = async (e) => {
     e.preventDefault();

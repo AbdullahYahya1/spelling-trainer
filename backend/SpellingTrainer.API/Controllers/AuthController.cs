@@ -92,7 +92,7 @@ namespace SpellingTrainer.API.Controllers
                 // Registration flow
                 if (string.IsNullOrEmpty(request.Username))
                 {
-                    return NotFound("User not found. Please provide a username to register.");
+                    return NotFound(new { message = "User not found. Please provide a username to register.", code = "USER_NOT_FOUND" });
                 }
 
                 if (await _context.Users.AnyAsync(u => u.Username == request.Username))
