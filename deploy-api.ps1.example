@@ -25,11 +25,11 @@ if ($Help) {
 }
 
 # Configuration
-$ftpServer = "ftp://apiforspelling.somee.com"
-$ftpUsername = "abvdsrf23"
-$ftpPassword = "L123456n"
+$ftpServer = "ftp://YOUR_FTP_SERVER"
+$ftpUsername = "YOUR_FTP_USERNAME"
+$ftpPassword = "YOUR_FTP_PASSWORD"
 $localPath = "backend/SpellingTrainer.API/publish"
-$remotePath = "/www.apiforspelling.somee.com"
+$remotePath = "/www.your-site.com"
 $projectPath = "backend/SpellingTrainer.API"
 
 Write-Host "=== SPELLING TRAINER API DEPLOYER ===" -ForegroundColor Green
@@ -188,10 +188,9 @@ if (-not $BuildOnly) {
     if ($failCount -eq 0) {
         Write-Host ""
         Write-Host "API deployed successfully!" -ForegroundColor Green
-        Write-Host "API URL: https://apiforspelling.somee.com" -ForegroundColor Cyan
-        Write-Host "Swagger UI: https://apiforspelling.somee.com/swagger" -ForegroundColor Cyan
     }
 }
 
 Write-Host ""
 Write-Host "Deployment completed!" -ForegroundColor Green
+

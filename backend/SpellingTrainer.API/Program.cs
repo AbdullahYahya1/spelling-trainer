@@ -65,6 +65,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddHttpClient<IAuthenticaService, AuthenticaService>();
 
 builder.Services.AddCors(options =>
 {
@@ -79,17 +80,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// ALWAYS Enable Swagger, even in production for this project
+app.UseSwagger();
+app.UseSwaggerUI(c =>
+{
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Spelling Trainer API v1");
+    c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
+    c.DocumentTitle = "Spelling Trainer API";
+    c.DefaultModelsExpandDepth(-1); // Hide models section
+    c.DisplayRequestDuration();
+});
+
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Spelling Trainer API v1");
-        c.RoutePrefix = "swagger"; // Set Swagger UI at /swagger
-        c.DocumentTitle = "Spelling Trainer API";
-        c.DefaultModelsExpandDepth(-1); // Hide models section
-        c.DisplayRequestDuration();
-    });
+    // Other dev-only middleware could go here
 }
 
 app.UseHttpsRedirection();

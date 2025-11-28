@@ -18,7 +18,7 @@ export const authService = {
       return payload.exp < currentTime;
     } catch (error) {
       console.error('Error checking token expiration:', error);
-      return true; // If we can't parse the token, consider it expired
+      return true; 
     }
   },
 
@@ -32,36 +32,36 @@ export const authService = {
     return false;
   },
 
-  async login(username, password) {
+  // OTP Flow - Now handled entirely by our backend
+  async sendOtp(email) {
     try {
-      const response = await api.post('/auth/login', { username, password });
-      const { token, username: userUsername, email } = response.data;
-
-      localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify({ username: userUsername, email }));
-      
+      const response = await api.post('/auth/send-otp', { email });
       return { success: true, data: response.data };
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Login failed' 
+        error: error.response?.data?.message || 'Failed to send OTP' 
       };
     }
   },
 
-  async register(username, email, password) {
+  async verifyOtpAndLogin(email, otp, username = '') {
     try {
-      const response = await api.post('/auth/register', { username, email, password });
+      // Call OUR backend to verify OTP. 
+      // The backend will call Authentica to verify, and if valid, return JWT.
+      const response = await api.post('/auth/verify-otp', { email, otp, username });
+      
       const { token, username: userUsername, email: userEmail } = response.data;
 
       localStorage.setItem('authToken', token);
       localStorage.setItem('user', JSON.stringify({ username: userUsername, email: userEmail }));
       
       return { success: true, data: response.data };
+
     } catch (error) {
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
+        error: error.response?.data?.message || 'Invalid OTP or Login failed' 
       };
     }
   },
@@ -84,7 +84,6 @@ export const authService = {
       });
       return { success: true, data: response.data };
     } catch (error) {
-
       if (error.response?.status === 401) {
         console.log('Server says token is invalid, cleaning up...');
         this.logout();

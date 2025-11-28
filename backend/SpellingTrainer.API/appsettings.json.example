@@ -1,16 +1,16 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=Goodlanguage.mssql.somee.com;Database=Goodlanguage;User Id=abvdsrf23_SQLLogin_1;Password=qwt7peqan1;TrustServerCertificate=True;"
+    "DefaultConnection": "Server=YOUR_SERVER;Database=YOUR_DB;User Id=YOUR_USER;Password=YOUR_PASSWORD;TrustServerCertificate=True;"
   },
   "Jwt": {
-    "SecretKey": "YourSuperSecretKeyThatIsAtLeast32CharactersLong!",
+    "SecretKey": "YOUR_SECRET_KEY_HERE_AT_LEAST_32_CHARS",
     "Issuer": "SpellingTrainer",
     "Audience": "SpellingTrainerUsers",
     "ExpirationMinutes": 43200
   },
   "Authentica": {
     "ApiUrl": "https://api.authentica.sa",
-    "AuthToken": "$2y$10$Wac8hdjC0fPQjVPt.BoVSegLGJPf7w0tl469sRJtjQ3Ck9ChOafZG"
+    "AuthToken": "YOUR_AUTHENTICA_TOKEN_HERE"
   },
   "Logging": {
     "LogLevel": {
@@ -20,3 +20,4 @@
   },
   "AllowedHosts": "*"
 }
+

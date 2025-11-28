@@ -172,12 +172,18 @@ pnpm-lock.yaml
 *.p12
 *.pfx
 secrets.json
+appsettings.json
 appsettings.Production.json
 appsettings.Staging.json
 
 # ===========================================
 # Documentation & Notes
 # ===========================================
+
+# Deployment scripts with secrets
+deploy-api.ps1
+deploy.bat
+upload.ps1
 
 # Personal notes
 NOTES.md
