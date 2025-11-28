@@ -179,19 +179,10 @@ export default function App() {
     return (
       <div style={themedStyles.appWrapper}>
         <header style={themedStyles.header}>
-          <h1 style={themedStyles.title}>Spelling Trainer</h1>
+          <div style={themedStyles.title}>
+            <img src="/WEBSITE LOGO.png" alt="Spelling Trainer Logo" style={{ height: '100px' }} />
+          </div>
           <div style={themedStyles.nav}>
-            <button
-              onClick={() => {
-                setAuthMessage('');
-                setAuthEmail('');
-                setAuthPage('');
-              }}
-              style={themedStyles.themeToggleBtn}
-              aria-label="Back to app"
-            >
-              Back
-            </button>
             <button
               onClick={toggleTheme}
               style={themedStyles.themeToggleBtn}
@@ -224,6 +215,9 @@ export default function App() {
             initialEmail={authEmail}
           />
         )}
+        <footer style={themedStyles.footer}>
+          Spelling Trainer &copy; {new Date().getFullYear()}
+        </footer>
       </div>
     );
   }
@@ -231,7 +225,9 @@ export default function App() {
   return (
     <div style={themedStyles.appWrapper}>
       <header style={themedStyles.header}>
-        <h1 style={themedStyles.title}>Spelling Trainer</h1>
+        <div style={themedStyles.title}>
+          <img src="/WEBSITE LOGO.png" alt="Spelling Trainer Logo" style={{ height: '100px' }} />
+        </div>
         <nav style={themedStyles.nav}>
           <a
             href="#typing"
@@ -344,6 +340,9 @@ export default function App() {
       ) : (
         <PhonogramsPage themedStyles={themedStyles} theme={theme} />
       )}
+      <footer style={themedStyles.footer}>
+        Spelling Trainer &copy; {new Date().getFullYear()}
+      </footer>
     </div>
   );
 }
@@ -479,7 +478,7 @@ function TypingPage({ themedStyles, theme, streak, updateStreak }) {
 
   if (!wordList.length) {
     return (
-      <div style={themedStyles.page}>
+      <div style={{...themedStyles.page, textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
         <h2>No words available.</h2>
         <p>Add some on the "Manage Words" page.</p>
       </div>
@@ -708,73 +707,69 @@ function WordManagerPage({ themedStyles }) {
 
   return (
     <div style={themedStyles.page}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <div>
-          <h2 style={themedStyles.manageTitle}>Manage Your Words</h2>
-          <p style={themedStyles.manageSubtitle}>
-            Search and organize your spelling practice words
-          </p>
+      <div style={themedStyles.managerHeader}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h2 style={{ ...themedStyles.manageTitle, marginBottom: 0 }}>Word Bank</h2>
+          <span style={themedStyles.storageBadge}>
+            {storageService.isOnline ? '🟢 Cloud' : '🟠 Local'}
+          </span>
         </div>
         <button 
           onClick={() => setShowAddModal(true)} 
           style={themedStyles.addWordButton}
         >
-          + Add Word
+          + New Word
         </button>
       </div>
       
-      <div style={themedStyles.storageIndicator}>
-        {storageService.isOnline ? (
-          <span style={themedStyles.onlineIndicator}>
-            Online Storage
-          </span>
-        ) : (
-          <span style={themedStyles.localIndicator}>
-            Local Storage
-          </span>
-        )}
-      </div>
-      
-      <div style={themedStyles.searchContainer}>
+      <div style={themedStyles.tableControls}>
         <input
           type="text"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search words..."
-          style={themedStyles.searchInput}
+          style={themedStyles.tableSearch}
         />
       </div>
       
       {filteredWords.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: themedStyles.wordDescription.color }}>
+        <div style={themedStyles.emptyState}>
           <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-            No words found
+            {searchTerm ? 'No matches found' : 'No words yet'}
           </p>
-          <p style={{ fontSize: '0.9rem' }}>
-            {searchTerm ? 'Try a different search term' : 'Add your first word to get started'}
+          <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+            {searchTerm ? 'Try a different term' : 'Add your first word to get started'}
           </p>
         </div>
       ) : (
-        <>
-          <div style={{ textAlign: 'center', marginBottom: '1rem', fontSize: '0.9rem', color: themedStyles.wordDescription.color }}>
-            {filteredWords.length} word{filteredWords.length !== 1 ? 's' : ''} {searchTerm ? 'found' : 'total'}
-          </div>
-          <ul style={themedStyles.manageList}>
-            {filteredWords.map((word, i) => (
-              <li key={i} style={themedStyles.manageListItem}>
-                <div style={themedStyles.wordContent}>
-                  <div style={themedStyles.manageWord}>{word.text}</div>
-                  {word.description && (
-                    <div style={themedStyles.wordDescription}>{word.description}</div>
-                  )}
-                </div>
-                <button onClick={() => handleDeleteClick(word.text)} style={themedStyles.removeBtn} aria-label={`Remove ${word.text}`}>
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
+        <div style={themedStyles.tableWrapper}>
+          <table style={themedStyles.table}>
+            <thead>
+              <tr>
+                <th style={themedStyles.th}>Word</th>
+                <th style={themedStyles.th}>Description</th>
+                <th style={{...themedStyles.th, textAlign: 'right', width: '80px'}}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredWords.map((word, i) => (
+                <tr key={i} style={themedStyles.tr}>
+                  <td style={themedStyles.tdWord}>{word.text}</td>
+                  <td style={themedStyles.tdDesc}>{word.description || <span style={{opacity: 0.3}}>-</span>}</td>
+                  <td style={{...themedStyles.td, textAlign: 'right'}}>
+                    <button 
+                      onClick={() => handleDeleteClick(word.text)} 
+                      style={themedStyles.tableActionBtn} 
+                      title="Delete"
+                    >
+                      🗑️
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       
       {showAddModal && (
@@ -1005,8 +1000,11 @@ function getThemedStyles(theme) {
         : '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.06)', // Subtle Tailwind-like shadow
       border: isDark ? 'none' : '1px solid #e2e8f0', // Subtle border for light mode
       marginTop: '3rem',
+      minHeight: 'calc(100vh - 16rem)',
       color: isDark ? '#f7f7fa' : '#334155', // Slate 700
       transition: 'background 0.3s, color 0.3s',
+      display: 'flex',
+      flexDirection: 'column',
     },
     input: {
       fontSize: '1.1rem',
@@ -1027,8 +1025,6 @@ function getThemedStyles(theme) {
       marginTop: '4rem',
       marginBottom: '1rem',
       position: 'relative',
-      maskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
-      WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)',
     },
     wordContainer: {
       display: 'flex',
@@ -1147,7 +1143,7 @@ function getThemedStyles(theme) {
       cursor: 'pointer',
     },
     redoBtn: {
-      marginTop: '1rem',
+      marginTop: 'auto',
       fontSize: '1rem',
       padding: '0.5rem 1rem',
       background: isDark ? '#2980b9' : '#3b82f6',
@@ -1168,10 +1164,117 @@ function getThemedStyles(theme) {
     manageTitle: {
       fontSize: '1.8rem',
       fontWeight: 700,
-      marginBottom: '0.5rem',
-      letterSpacing: '-0.02em',
       color: isDark ? '#f7f7fa' : '#1a202c',
+      letterSpacing: '-0.02em',
+    },
+    managerHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: '2rem',
+      flexWrap: 'wrap',
+      gap: '1rem',
+    },
+    storageBadge: {
+      fontSize: '0.85rem',
+      padding: '0.3rem 0.8rem',
+      borderRadius: '20px',
+      background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+      color: isDark ? '#cbd5e1' : '#64748b',
+      fontWeight: 500,
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '0.4rem',
+    },
+    tableControls: {
+      marginBottom: '1.5rem',
+    },
+    tableSearch: {
+      width: '100%',
+      maxWidth: '100%',
+      fontSize: '1rem',
+      padding: '0.85rem 1.2rem',
+      border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
+      borderRadius: '12px',
+      background: isDark ? '#181a1b' : '#f9fafb',
+      color: isDark ? '#f7f7fa' : '#1a202c',
+      outline: 'none',
+      transition: 'all 0.2s ease',
+      boxSizing: 'border-box',
+      '&:focus': {
+        borderColor: isDark ? '#3498db' : '#4f46e5',
+        boxShadow: isDark ? '0 0 0 3px rgba(52, 152, 219, 0.1)' : '0 0 0 3px rgba(79, 70, 229, 0.1)',
+        background: isDark ? '#181a1b' : '#ffffff',
+      },
+    },
+    tableWrapper: {
+      overflowX: 'auto',
+      borderRadius: '12px',
+      border: isDark ? '1px solid #333' : '1px solid #e2e8f0',
+    },
+    table: {
+      width: '100%',
+      borderCollapse: 'collapse',
+      minWidth: '500px',
+    },
+    th: {
+      textAlign: 'left',
+      padding: '1rem 1.2rem',
+      background: isDark ? '#2c3e50' : '#f8fafc',
+      color: isDark ? '#cbd5e1' : '#64748b',
+      fontWeight: 600,
+      fontSize: '0.9rem',
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      borderBottom: isDark ? '1px solid #333' : '1px solid #e2e8f0',
+    },
+    tr: {
+      borderBottom: isDark ? '1px solid #333' : '1px solid #f1f5f9',
+      '&:last-child': {
+        borderBottom: 'none',
+      },
+      '&:hover': {
+        background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+      },
+    },
+    td: {
+      padding: '1rem 1.2rem',
+      color: isDark ? '#f7f7fa' : '#334155',
+      fontSize: '1rem',
+    },
+    tdWord: {
+      padding: '1rem 1.2rem',
+      color: isDark ? '#f7f7fa' : '#334155',
+      fontSize: '1rem',
+      fontWeight: 600,
+    },
+    tdDesc: {
+      padding: '1rem 1.2rem',
+      color: isDark ? '#94a3b8' : '#64748b',
+      fontSize: '0.95rem',
+    },
+    tableActionBtn: {
+      background: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '1.2rem',
+      padding: '0.4rem',
+      borderRadius: '6px',
+      transition: 'background 0.2s',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      '&:hover': {
+        background: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
+      },
+    },
+    emptyState: {
       textAlign: 'center',
+      padding: '4rem 2rem',
+      color: isDark ? '#94a3b8' : '#64748b',
+      background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#f8fafc',
+      borderRadius: '12px',
+      border: isDark ? '1px dashed #444' : '1px dashed #cbd5e1',
     },
     manageSubtitle: {
       fontSize: '0.95rem',
@@ -1522,14 +1625,19 @@ function getThemedStyles(theme) {
     authForm: {
       maxWidth: '400px',
       margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      minHeight: '100%',
+      padding: '2rem 0',
     },
     formGroup: {
-      marginBottom: '1rem',
+      marginBottom: '1.5rem',
     },
     authInput: {
       width: '100%',
       fontSize: '1.1rem',
-      padding: '0.7rem',
+      padding: '1rem',
       border: isDark ? '2px solid #444' : '2px solid #e2e8f0',
       borderRadius: '8px',
       background: isDark ? '#181a1b' : '#ffffff',
@@ -1540,20 +1648,23 @@ function getThemedStyles(theme) {
     },
     authButton: {
       width: '100%',
-      fontSize: '1rem',
-      padding: '0.75rem',
+      fontSize: '1.1rem',
+      padding: '1rem',
       background: isDark ? '#27ae60' : '#0f172a', // Slate 900
       color: '#fff',
       border: 'none',
-      borderRadius: '6px',
+      borderRadius: '8px',
       cursor: 'pointer',
       transition: 'background 0.2s',
-      fontWeight: 500,
+      fontWeight: 600,
+      marginTop: '0.5rem',
     },
     authSwitch: {
       textAlign: 'center',
-      marginTop: '1.5rem',
+      marginTop: '2rem',
       color: isDark ? '#f7f7fa' : '#1a202c',
+      paddingTop: '1rem',
+      borderTop: isDark ? '1px solid #333' : '1px solid #eee',
     },
     authSwitchButton: {
       background: 'none',
@@ -1660,6 +1771,13 @@ function getThemedStyles(theme) {
       fontSize: '1.1rem',
       color: '#ffffff',
       opacity: 0.8,
+    },
+    footer: {
+      padding: '2rem',
+      marginTop: 'auto',
+      textAlign: 'center',
+      color: isDark ? '#4b5563' : '#94a3b8',
+      fontSize: '0.85rem',
     },
   };
 }

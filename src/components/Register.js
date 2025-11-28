@@ -49,8 +49,9 @@ const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage, i
   };
 
   return (
-    <div style={themedStyles.page}>
-      <h2 style={themedStyles.manageTitle}>Register</h2>
+    <div style={{...themedStyles.page, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+      <div style={{ maxWidth: '450px', margin: '0 auto', width: '100%' }}>
+      <h2 style={{...themedStyles.manageTitle, marginBottom: '2rem'}}>Register</h2>
       
       {step === 'details' ? (
         <form onSubmit={handleSendOtp} style={themedStyles.authForm}>
@@ -146,6 +147,7 @@ const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage, i
             Login
           </button>
         </p>
+      </div>
       </div>
     </div>
   );
