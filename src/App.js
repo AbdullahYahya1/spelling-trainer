@@ -62,7 +62,7 @@ export default function App() {
         }
       } else {
         storageService.setOnlineMode(false);
-        setAuthPage('login');
+        // setAuthPage('login'); // Don't force login
       }
       setIsLoading(false);
     };
@@ -81,7 +81,7 @@ export default function App() {
         setIsAuthenticated(false);
         setUser(null);
         storageService.setOnlineMode(false);
-        setAuthPage('login');
+        setAuthPage(''); // Go to guest mode instead of login page
       }
     };
 
