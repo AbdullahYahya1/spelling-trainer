@@ -200,6 +200,7 @@ export default function App() {
               if (typeof email === 'string') setAuthEmail(email);
               setAuthPage('register');
             }}
+            onSkip={() => setAuthPage('')}
             themedStyles={themedStyles}
           />
         ) : (
@@ -210,6 +211,7 @@ export default function App() {
               setAuthEmail('');
               setAuthPage('login');
             }}
+            onSkip={() => setAuthPage('')}
             themedStyles={themedStyles}
             initialMessage={authMessage}
             initialEmail={authEmail}

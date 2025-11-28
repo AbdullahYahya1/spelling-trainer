@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { authService } from '../services/authService';
 
-const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage, initialEmail }) => {
+const Register = ({ onRegister, onSwitchToLogin, onSkip, themedStyles, initialMessage, initialEmail }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState(initialEmail || '');
   const [otp, setOtp] = useState('');
@@ -147,6 +147,21 @@ const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage, i
             Login
           </button>
         </p>
+        <button 
+          onClick={onSkip}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: themedStyles.input.color,
+            opacity: 0.7,
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            marginTop: '1rem',
+            textDecoration: 'underline'
+          }}
+        >
+          Continue as Guest
+        </button>
       </div>
       </div>
     </div>
