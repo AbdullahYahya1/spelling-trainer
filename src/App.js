@@ -180,7 +180,7 @@ export default function App() {
       <div style={themedStyles.appWrapper}>
         <header style={themedStyles.header}>
           <div style={themedStyles.title}>
-            <img src="/WEBSITE LOGO.png" alt="Spelling Trainer Logo" style={{ height: '100px' }} />
+            <img src="/WEBSITE LOGO.png" alt="Spelling Trainer Logo" style={{ height: '100px', filter: 'invert(1)' }} />
           </div>
           <div style={themedStyles.nav}>
             <button
@@ -226,7 +226,7 @@ export default function App() {
     <div style={themedStyles.appWrapper}>
       <header style={themedStyles.header}>
         <div style={themedStyles.title}>
-          <img src="/WEBSITE LOGO.png" alt="Spelling Trainer Logo" style={{ height: '100px' }} />
+          <img src="/WEBSITE LOGO.png" alt="Spelling Trainer Logo" style={{ height: '100px', filter: 'invert(1)' }} />
         </div>
         <nav style={themedStyles.nav}>
           <a
@@ -1000,7 +1000,7 @@ function getThemedStyles(theme) {
         : '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.06)', // Subtle Tailwind-like shadow
       border: isDark ? 'none' : '1px solid #e2e8f0', // Subtle border for light mode
       marginTop: '3rem',
-      minHeight: 'calc(100vh - 16rem)',
+      minHeight: '80%',
       color: isDark ? '#f7f7fa' : '#334155', // Slate 700
       transition: 'background 0.3s, color 0.3s',
       display: 'flex',
