@@ -19,7 +19,7 @@ const Login = ({ onLogin, onSwitchToRegister, themedStyles }) => {
       setStep('otp');
     } else {
       if (result.errorCode === 'USER_NOT_FOUND') {
-        onSwitchToRegister(result.error);
+        onSwitchToRegister(result.error, email);
       } else {
         setError(result.error);
       }

@@ -21,6 +21,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authPage, setAuthPage] = useState('');
   const [authMessage, setAuthMessage] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [streak, setStreak] = useState(null);
 
@@ -181,7 +182,11 @@ export default function App() {
           <h1 style={themedStyles.title}>Spelling Trainer</h1>
           <div style={themedStyles.nav}>
             <button
-              onClick={() => setAuthPage('')}
+              onClick={() => {
+                setAuthMessage('');
+                setAuthEmail('');
+                setAuthPage('');
+              }}
               style={themedStyles.themeToggleBtn}
               aria-label="Back to app"
             >
@@ -199,8 +204,9 @@ export default function App() {
         {authPage === 'login' ? (
           <Login 
             onLogin={handleLogin}
-            onSwitchToRegister={(msg) => {
+            onSwitchToRegister={(msg, email) => {
               if (typeof msg === 'string') setAuthMessage(msg);
+              if (typeof email === 'string') setAuthEmail(email);
               setAuthPage('register');
             }}
             themedStyles={themedStyles}
@@ -210,10 +216,12 @@ export default function App() {
             onRegister={handleRegister}
             onSwitchToLogin={() => {
               setAuthMessage('');
+              setAuthEmail('');
               setAuthPage('login');
             }}
             themedStyles={themedStyles}
             initialMessage={authMessage}
+            initialEmail={authEmail}
           />
         )}
       </div>
@@ -285,14 +293,22 @@ export default function App() {
           ) : (
             <div style={themedStyles.authButtons}>
               <button
-                onClick={() => setAuthPage('login')}
+                onClick={() => {
+                  setAuthMessage('');
+                  setAuthEmail('');
+                  setAuthPage('login');
+                }}
                 style={themedStyles.authHeaderBtn}
                 aria-label="Login"
               >
                 Login
               </button>
               <button
-                onClick={() => setAuthPage('register')}
+                onClick={() => {
+                  setAuthMessage('');
+                  setAuthEmail('');
+                  setAuthPage('register');
+                }}
                 style={themedStyles.authHeaderBtn}
                 aria-label="Register"
               >

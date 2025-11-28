@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { authService } from '../services/authService';
 
-const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage }) => {
+const Register = ({ onRegister, onSwitchToLogin, themedStyles, initialMessage, initialEmail }) => {
   const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialEmail || '');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('details'); // 'details' or 'otp'
   const [loading, setLoading] = useState(false);
